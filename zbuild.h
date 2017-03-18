@@ -237,7 +237,7 @@
 #  define Tracecv(c, x)
 #endif
 
-#ifndef NO_UNALIGNED
+#if !defined(NO_UNALIGNED) && !defined(UNALIGNED_OK) && !defined(UNALIGNED64_OK)
 #  if defined(__x86_64__) || defined(_M_X64) || defined(__amd64__) || defined(_M_AMD64)
 #    define UNALIGNED_OK
 #    define UNALIGNED64_OK
