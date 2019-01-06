@@ -1098,7 +1098,7 @@ int ZEXPORT inflate(z_streamp strm, int flush) {
         case LENGTH:
             if (state->wrap && state->flags) {
                 NEEDBITS(32);
-                if ((state->wrap & 4) && hold != (state->total & 0xffffffff)) {
+                if ((state->wrap & 4) && hold != (state->total & 0xffffffffUL)) {
                     strm->msg = (z_const char *)"incorrect length check";
                     state->mode = BAD;
                     break;

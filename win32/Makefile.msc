@@ -22,15 +22,16 @@ AS = ml
 LD = link
 AR = lib
 RC = rc
-CFLAGS  = -nologo -MD -W3 -O2 -Oy- -Zi -Fd"zlib" $(LOC)
-WFLAGS  = -D_CRT_SECURE_NO_DEPRECATE -D_CRT_NONSTDC_NO_DEPRECATE
+CFLAGS  = -nologo -MT -W3 -O2 -Oy- -YX -FD -GA -Zi -Fd"zlib" $(LOC)
+WFLAGS  = -DWINVER=0x500 -D_MBCS -D_WINDOWS -DNDEBUG -DWIN32 -D_CRT_SECURE_NO_DEPRECATE -D_CRT_NONSTDC_NO_DEPRECATE
 ASFLAGS = -coff -Zi $(LOC)
 LDFLAGS = -nologo -debug -incremental:no -opt:ref
 ARFLAGS = -nologo
 RCFLAGS = /dWIN32 /r
 
 OBJS = adler32.obj compress.obj crc32.obj deflate.obj gzclose.obj gzlib.obj gzread.obj \
-       gzwrite.obj infback.obj inflate.obj inftrees.obj inffast.obj trees.obj uncompr.obj zutil.obj
+       gzwrite.obj infback.obj inflate.obj inftrees.obj inffast.obj trees.obj uncompr.obj zutil.obj \
+       infback9.obj inftree9.obj blast.obj
 OBJA =
 
 
@@ -75,6 +76,12 @@ minigzip_d.exe: minigzip.obj $(IMPLIB)
 {$(TOP)/test}.c.obj:
 	$(CC) -c -I$(TOP) $(WFLAGS) $(CFLAGS) $<
 
+{$(TOP)/contrib/infback9}.c.obj:
+	$(CC) -c $(WFLAGS) $(CFLAGS) -I ./ $<
+
+{$(TOP)/contrib/blast}.c.obj:
+	$(CC) -c $(WFLAGS) $(CFLAGS) -I ./ $<
+
 {$(TOP)/contrib/masmx64}.c.obj:
 	$(CC) -c $(WFLAGS) $(CFLAGS) $<
 
@@ -116,6 +123,12 @@ trees.obj: $(TOP)/trees.c $(TOP)/zutil.h $(TOP)/zlib.h $(TOP)/zconf.h $(TOP)/def
 uncompr.obj: $(TOP)/uncompr.c $(TOP)/zlib.h $(TOP)/zconf.h
 
 zutil.obj: $(TOP)/zutil.c $(TOP)/zutil.h $(TOP)/zlib.h $(TOP)/zconf.h
+
+infback9.obj: $(TOP)/contrib/infback9/infback9.c $(TOP)/contrib/infback9/infback9.h
+
+inftree9.obj: $(TOP)/contrib/infback9/inftree9.c $(TOP)/contrib/infback9/inftree9.h
+
+blast.obj: $(TOP)/contrib/blast/blast.c $(TOP)/contrib/blast/blast.h
 
 gvmat64.obj: $(TOP)/contrib\masmx64\gvmat64.asm
 
