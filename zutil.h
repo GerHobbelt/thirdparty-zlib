@@ -42,6 +42,10 @@ typedef unsigned short ush;
 typedef ush FAR ushf;
 typedef unsigned long  ulg;
 
+#define Z_U8 unsigned __int64
+
+#if 0
+
 #if !defined(Z_U8) && !defined(Z_SOLO) && defined(STDC)
 #  include <limits.h>
 #  if (ULONG_MAX == 0xffffffffffffffff)
@@ -53,6 +57,8 @@ typedef unsigned long  ulg;
 #  elif (UINT_MAX == 0xffffffffffffffff)
 #    define Z_U8 unsigned
 #  endif
+#endif
+
 #endif
 
 extern z_const char * const z_errmsg[10]; /* indexed by 2-zlib_error */
