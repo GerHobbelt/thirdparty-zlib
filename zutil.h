@@ -125,7 +125,7 @@ extern const char * const z_errmsg[10]; /* indexed by 2-zlib_error */
 #if defined(MACOS) || defined(TARGET_OS_MAC)
 #  define OS_CODE  0x07
 #  if defined(__MWERKS__) && __dest_os != __be_os && __dest_os != __win32_os
-#    include <unix.h> /* for fdopen */
+//#    include <unix.h> /* for fdopen */
 #  else
 #    ifndef fdopen
 #      define fdopen(fd,mode) NULL /* No fdopen() */
@@ -194,7 +194,7 @@ extern const char * const z_errmsg[10]; /* indexed by 2-zlib_error */
 #  ifdef __TURBOC__
 #    define NO_vsnprintf
 #  endif
-#  ifdef WIN32
+#  if defined(_MSC_VER) && _MSC_VER < 1500 
      /* In Win32, vsnprintf is available as the "non-ANSI" _vsnprintf. */
 #    if !defined(vsnprintf) && !defined(NO_vsnprintf)
 #      define vsnprintf _vsnprintf
@@ -242,14 +242,14 @@ extern const char * const z_errmsg[10]; /* indexed by 2-zlib_error */
 #  include <stdio.h>
    extern int z_verbose;
    extern void z_error    OF((char *m));
-#  define Assert(cond,msg) {if(!(cond)) z_error(msg);}
+#  define ZAssert(cond,msg) {if(!(cond)) z_error(msg);}
 #  define Trace(x) {if (z_verbose>=0) fprintf x ;}
 #  define Tracev(x) {if (z_verbose>0) fprintf x ;}
 #  define Tracevv(x) {if (z_verbose>1) fprintf x ;}
 #  define Tracec(c,x) {if (z_verbose>0 && (c)) fprintf x ;}
 #  define Tracecv(c,x) {if (z_verbose>1 && (c)) fprintf x ;}
 #else
-#  define Assert(cond,msg)
+#  define ZAssert(cond,msg)
 #  define Trace(x)
 #  define Tracev(x)
 #  define Tracevv(x)

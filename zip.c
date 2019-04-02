@@ -189,12 +189,14 @@ local void init_linkedlist(ll)
     ll->first_block = ll->last_block = NULL;
 }
 
+/*
 local void free_linkedlist(ll)
     linkedlist_data* ll;
 {
     free_datablock(ll->first_block);
     ll->first_block = ll->last_block = NULL;
 }
+*/
 
 
 local int add_data_in_datablock(ll,buf,len)
@@ -373,7 +375,7 @@ local int ziplocal_getShort (pzlib_filefunc_def,filestream,pX)
     uLong *pX;
 {
     uLong x ;
-    int i;
+    int i = 0;
     int err;
 
     err = ziplocal_getByte(pzlib_filefunc_def,filestream,&i);
@@ -401,7 +403,7 @@ local int ziplocal_getLong (pzlib_filefunc_def,filestream,pX)
     uLong *pX;
 {
     uLong x ;
-    int i;
+    int i = 0;
     int err;
 
     err = ziplocal_getByte(pzlib_filefunc_def,filestream,&i);
@@ -758,9 +760,9 @@ extern int ZEXPORT zipOpenNewFileInZip3 (file, filename, zipfi,
     zi->ci.flag = 0;
     if ((level==8) || (level==9))
       zi->ci.flag |= 2;
-    if ((level==2))
+    if (level==2)
       zi->ci.flag |= 4;
-    if ((level==1))
+    if (level==1)
       zi->ci.flag |= 6;
     if (password != NULL)
       zi->ci.flag |= 1;

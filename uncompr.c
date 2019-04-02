@@ -8,6 +8,7 @@
 #define ZLIB_INTERNAL
 #include "zlib.h"
 
+
 /* ===========================================================================
      Decompresses the source buffer into the destination buffer.  sourceLen is
    the byte length of the source buffer. Upon entry, destLen is the total
@@ -23,6 +24,7 @@
    enough memory, Z_BUF_ERROR if there was not enough room in the output
    buffer, or Z_DATA_ERROR if the input data was corrupted.
 */
+
 int ZEXPORT uncompress (dest, destLen, source, sourceLen)
     Bytef *dest;
     uLongf *destLen;
@@ -34,7 +36,7 @@ int ZEXPORT uncompress (dest, destLen, source, sourceLen)
 
     stream.next_in = (Bytef*)source;
     stream.avail_in = (uInt)sourceLen;
-    /* Check for source > 64K on 16-bit machine: */
+    // Check for source > 64K on 16-bit machine: 
     if ((uLong)stream.avail_in != sourceLen) return Z_BUF_ERROR;
 
     stream.next_out = dest;
@@ -59,3 +61,4 @@ int ZEXPORT uncompress (dest, destLen, source, sourceLen)
     err = inflateEnd(&stream);
     return err;
 }
+

@@ -165,6 +165,9 @@ typedef gz_header FAR *gz_headerp;
 #define Z_FULL_FLUSH    3
 #define Z_FINISH        4
 #define Z_BLOCK         5
+
+#define Z_UNITY_INFLATE_IGNORE_CRC 0x1000 /* disables CRC checking in inflate(). OR it with the flush parameter */
+
 /* Allowed flush values; see deflate() and inflate() below for details */
 
 #define Z_OK            0
@@ -456,6 +459,11 @@ ZEXTERN int ZEXPORT inflate OF((z_streamp strm, int flush));
   continue decompressing. If Z_DATA_ERROR is returned, the application may then
   call inflateSync() to look for a good compression block if a partial recovery
   of the data is desired.
+
+  UNITY-SPECIFIC:
+
+  If Z_UNITY_INFLATE_IGNORE_CRC bit is set in the flush parameter, then no CRC
+  checking is done.
 */
 
 
@@ -988,7 +996,7 @@ ZEXTERN uLong ZEXPORT zlibCompileFlags OF((void));
 
     The sprintf variant used by gzprintf (zero is best):
      24: 0 = vs*, 1 = s* -- 1 means limited to 20 arguments after the format
-     25: 0 = *nprintf, 1 = *printf -- 1 means gzprintf() not secure!
+     25: 0 = *nprintf, 1 = *printf_console -- 1 means gzprintf() not secure!
      26: 0 = returns value, 1 = void -- 1 means inferred string length returned
 
     Remainder:

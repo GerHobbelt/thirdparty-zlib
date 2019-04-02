@@ -195,7 +195,7 @@ local void send_bits(s, value, length)
     int length; /* number of bits */
 {
     Tracevv((stderr," l %2d v %4x ", length, value));
-    Assert(length > 0 && length <= 15, "invalid length");
+    ZAssert(length > 0 && length <= 15, "invalid length");
     s->bits_sent += (ulg)length;
 
     /* If not enough room in bi_buf, use (valid) bits from bi_buf and
@@ -264,7 +264,7 @@ local void tr_static_init()
             _length_code[length++] = (uch)code;
         }
     }
-    Assert (length == 256, "tr_static_init: length != 256");
+    ZAssert (length == 256, "tr_static_init: length != 256");
     /* Note that the length 255 (match length 258) can be represented
      * in two different ways: code 284 + 5 bits or code 285, so we
      * overwrite length_code[255] to use the best encoding:
@@ -279,7 +279,7 @@ local void tr_static_init()
             _dist_code[dist++] = (uch)code;
         }
     }
-    Assert (dist == 256, "tr_static_init: dist != 256");
+    ZAssert (dist == 256, "tr_static_init: dist != 256");
     dist >>= 7; /* from now on, all distances are divided by 128 */
     for ( ; code < D_CODES; code++) {
         base_dist[code] = dist << 7;
@@ -287,7 +287,7 @@ local void tr_static_init()
             _dist_code[256 + dist++] = (uch)code;
         }
     }
-    Assert (dist == 256, "tr_static_init: 256+dist != 512");
+    ZAssert (dist == 256, "tr_static_init: 256+dist != 512");
 
     /* Construct the codes of the static literal tree */
     for (bits = 0; bits <= MAX_BITS; bits++) bl_count[bits] = 0;
@@ -332,7 +332,7 @@ void gen_trees_header()
     FILE *header = fopen("trees.h", "w");
     int i;
 
-    Assert (header != NULL, "Can't open trees.h");
+    ZAssert (header != NULL, "Can't open trees.h");
     fprintf(header,
             "/* header created automatically with -DGEN_TREES_H */\n\n");
 
@@ -529,7 +529,6 @@ local void gen_bitlen(s, desc)
     }
     if (overflow == 0) return;
 
-    Trace((stderr,"\nbit length overflow\n"));
     /* This happens for example on obj2 and pic of the Calgary corpus */
 
     /* Find the first bit length which could increase: */
@@ -556,7 +555,6 @@ local void gen_bitlen(s, desc)
             m = s->heap[--h];
             if (m > max_code) continue;
             if ((unsigned) tree[m].Len != (unsigned) bits) {
-                Trace((stderr,"code %d bits %d->%d\n", m, tree[m].Len, bits));
                 s->opt_len += ((long)bits - (long)tree[m].Len)
                               *(long)tree[m].Freq;
                 tree[m].Len = (ush)bits;
@@ -593,7 +591,7 @@ local void gen_codes (tree, max_code, bl_count)
     /* Check that the bit counts in bl_count are consistent. The last code
      * must be all ones.
      */
-    Assert (code + bl_count[MAX_BITS]-1 == (1<<MAX_BITS)-1,
+    ZAssert (code + bl_count[MAX_BITS]-1 == (1<<MAX_BITS)-1,
             "inconsistent bit counts");
     Tracev((stderr,"\ngen_codes: max_code %d ", max_code));
 
@@ -776,7 +774,7 @@ local void send_tree (s, tree, max_code)
             if (curlen != prevlen) {
                 send_code(s, curlen, s->bl_tree); count--;
             }
-            Assert(count >= 3 && count <= 6, " 3_6?");
+            ZAssert(count >= 3 && count <= 6, " 3_6?");
             send_code(s, REP_3_6, s->bl_tree); send_bits(s, count-3, 2);
 
         } else if (count <= 10) {
@@ -841,8 +839,8 @@ local void send_all_trees(s, lcodes, dcodes, blcodes)
 {
     int rank;                    /* index in bl_order */
 
-    Assert (lcodes >= 257 && dcodes >= 1 && blcodes >= 4, "not enough codes");
-    Assert (lcodes <= L_CODES && dcodes <= D_CODES && blcodes <= BL_CODES,
+    ZAssert (lcodes >= 257 && dcodes >= 1 && blcodes >= 4, "not enough codes");
+    ZAssert (lcodes <= L_CODES && dcodes <= D_CODES && blcodes <= BL_CODES,
             "too many codes");
     Tracev((stderr, "\nbl counts: "));
     send_bits(s, lcodes-257, 5); /* not +255 as stated in appnote.txt */
@@ -962,7 +960,7 @@ void _tr_flush_block(s, buf, stored_len, eof)
         if (static_lenb <= opt_lenb) opt_lenb = static_lenb;
 
     } else {
-        Assert(buf != (char*)0, "lost buf");
+        ZAssert(buf != (char*)0, "lost buf");
         opt_lenb = static_lenb = stored_len + 5; /* force a stored block */
     }
 
@@ -999,7 +997,7 @@ void _tr_flush_block(s, buf, stored_len, eof)
         s->compressed_len += 3 + s->opt_len;
 #endif
     }
-    Assert (s->compressed_len == s->bits_sent, "bad compressed size");
+    ZAssert (s->compressed_len == s->bits_sent, "bad compressed size");
     /* The above check is made mod 2^32, for files larger than 512 MB
      * and uLong implemented on 32 bits.
      */
@@ -1033,7 +1031,7 @@ int _tr_tally (s, dist, lc)
         s->matches++;
         /* Here, lc is the match length - MIN_MATCH */
         dist--;             /* dist = match distance - 1 */
-        Assert((ush)dist < (ush)MAX_DIST(s) &&
+        ZAssert((ush)dist < (ush)MAX_DIST(s) &&
                (ush)lc <= (ush)(MAX_MATCH-MIN_MATCH) &&
                (ush)d_code(dist) < (ush)D_CODES,  "_tr_tally: bad match");
 
@@ -1097,7 +1095,7 @@ local void compress_block(s, ltree, dtree)
             }
             dist--; /* dist is now the match distance - 1 */
             code = d_code(dist);
-            Assert (code < D_CODES, "bad d_code");
+            ZAssert (code < D_CODES, "bad d_code");
 
             send_code(s, code, dtree);       /* send the distance code */
             extra = extra_dbits[code];
@@ -1108,7 +1106,7 @@ local void compress_block(s, ltree, dtree)
         } /* literal or match pair ? */
 
         /* Check that the overlay between pending_buf and d_buf+l_buf is ok: */
-        Assert((uInt)(s->pending) < s->lit_bufsize + 2*lx,
+        ZAssert((uInt)(s->pending) < s->lit_bufsize + 2*lx,
                "pendingBuf overflow");
 
     } while (lx < s->last_lit);

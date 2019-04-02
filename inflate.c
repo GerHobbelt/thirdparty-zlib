@@ -282,22 +282,22 @@ void makefixed()
     puts("     */");
     puts("");
     size = 1U << 9;
-    printf("    static const code lenfix[%u] = {", size);
+    printf_console("    static const code lenfix[%u] = {", size);
     low = 0;
     for (;;) {
-        if ((low % 7) == 0) printf("\n        ");
-        printf("{%u,%u,%d}", state.lencode[low].op, state.lencode[low].bits,
+        if ((low % 7) == 0) printf_console("\n        ");
+        printf_console("{%u,%u,%d}", state.lencode[low].op, state.lencode[low].bits,
                state.lencode[low].val);
         if (++low == size) break;
         putchar(',');
     }
     puts("\n    };");
     size = 1U << 5;
-    printf("\n    static const code distfix[%u] = {", size);
+    printf_console("\n    static const code distfix[%u] = {", size);
     low = 0;
     for (;;) {
-        if ((low % 6) == 0) printf("\n        ");
-        printf("{%u,%u,%d}", state.distcode[low].op, state.distcode[low].bits,
+        if ((low % 6) == 0) printf_console("\n        ");
+        printf_console("{%u,%u,%d}", state.distcode[low].op, state.distcode[low].bits,
                state.distcode[low].val);
         if (++low == size) break;
         putchar(',');
@@ -568,6 +568,7 @@ int flush;
     code last;                  /* parent table entry */
     unsigned len;               /* length to copy for repeats, bits to drop */
     int ret;                    /* return code */
+    int ignore_crc;
 #ifdef GUNZIP
     unsigned char hbuf[4];      /* buffer for gzip header crc calculation */
 #endif
@@ -577,6 +578,9 @@ int flush;
     if (strm == Z_NULL || strm->state == Z_NULL || strm->next_out == Z_NULL ||
         (strm->next_in == Z_NULL && strm->avail_in != 0))
         return Z_STREAM_ERROR;
+
+	ignore_crc = (flush & Z_UNITY_INFLATE_IGNORE_CRC) != 0;
+	flush = flush & ~Z_UNITY_INFLATE_IGNORE_CRC;
 
     state = (struct inflate_state FAR *)strm->state;
     if (state->mode == TYPE) state->mode = TYPEDO;      /* skip check */
@@ -1080,11 +1084,11 @@ int flush;
                 out -= left;
                 strm->total_out += out;
                 state->total += out;
-                if (out)
+                if (ignore_crc == 0 && out)
                     strm->adler = state->check =
                         UPDATE(state->check, put - out, out);
                 out = left;
-                if ((
+                if (ignore_crc == 0 && (
 #ifdef GUNZIP
                      state->flags ? hold :
 #endif
@@ -1142,7 +1146,7 @@ int flush;
     strm->total_in += in;
     strm->total_out += out;
     state->total += out;
-    if (state->wrap && out)
+    if (ignore_crc == 0 && state->wrap && out)
         strm->adler = state->check =
             UPDATE(state->check, strm->next_out - out, out);
     strm->data_type = state->bits + (state->last ? 64 : 0) +

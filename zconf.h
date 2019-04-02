@@ -12,51 +12,115 @@
  * If you *really* need a unique prefix for all types and library functions,
  * compile with -DZ_PREFIX. The "standard" zlib should be compiled without it.
  */
-#ifdef Z_PREFIX
-#  define deflateInit_          z_deflateInit_
-#  define deflate               z_deflate
-#  define deflateEnd            z_deflateEnd
-#  define inflateInit_          z_inflateInit_
-#  define inflate               z_inflate
-#  define inflateEnd            z_inflateEnd
-#  define deflateInit2_         z_deflateInit2_
-#  define deflateSetDictionary  z_deflateSetDictionary
-#  define deflateCopy           z_deflateCopy
-#  define deflateReset          z_deflateReset
-#  define deflateParams         z_deflateParams
-#  define deflateBound          z_deflateBound
-#  define deflatePrime          z_deflatePrime
-#  define inflateInit2_         z_inflateInit2_
-#  define inflateSetDictionary  z_inflateSetDictionary
-#  define inflateSync           z_inflateSync
-#  define inflateSyncPoint      z_inflateSyncPoint
-#  define inflateCopy           z_inflateCopy
-#  define inflateReset          z_inflateReset
-#  define inflateBack           z_inflateBack
-#  define inflateBackEnd        z_inflateBackEnd
-#  define compress              z_compress
-#  define compress2             z_compress2
-#  define compressBound         z_compressBound
-#  define uncompress            z_uncompress
-#  define adler32               z_adler32
-#  define crc32                 z_crc32
-#  define get_crc_table         z_get_crc_table
-#  define zError                z_zError
+#define UNITY_Z_PREFIX 1
+#ifdef UNITY_Z_PREFIX
 
-#  define alloc_func            z_alloc_func
-#  define free_func             z_free_func
-#  define in_func               z_in_func
-#  define out_func              z_out_func
-#  define Byte                  z_Byte
-#  define uInt                  z_uInt
-#  define uLong                 z_uLong
-#  define Bytef                 z_Bytef
-#  define charf                 z_charf
-#  define intf                  z_intf
-#  define uIntf                 z_uIntf
-#  define uLongf                z_uLongf
-#  define voidpf                z_voidpf
-#  define voidp                 z_voidp
+#  define _dist_code            unity_z__dist_code
+#  define _length_code          unity_z__length_code
+#  define _tr_align             unity_z__tr_align
+#  define _tr_flush_block       unity_z__tr_flush_block
+#  define _tr_init              unity_z__tr_init
+#  define _tr_stored_block      unity_z__tr_stored_block
+#  define _tr_tally             unity_z__tr_tally
+#  define adler32               unity_z_adler32
+#  define adler32_combine       unity_z_adler32_combine
+#  define adler32_combine64     unity_z_adler32_combine64
+#  define compress              unity_z_compress
+#  define compress2             unity_z_compress2
+#  define compressBound         unity_z_compressBound
+#  define crc32                 unity_z_crc32
+#  define crc32_combine         unity_z_crc32_combine
+#  define crc32_combine64       unity_z_crc32_combine64
+#  define deflate               unity_z_deflate
+#  define deflateBound          unity_z_deflateBound
+#  define deflateCopy           unity_z_deflateCopy
+#  define deflateEnd            unity_z_deflateEnd
+#  define deflateInit2_         unity_z_deflateInit2_
+#  define deflateInit_          unity_z_deflateInit_
+#  define deflateParams         unity_z_deflateParams
+#  define deflatePrime          unity_z_deflatePrime
+#  define deflateReset          unity_z_deflateReset
+#  define deflateSetDictionary  unity_z_deflateSetDictionary
+#  define deflateSetHeader      unity_z_deflateSetHeader
+#  define deflateTune           unity_z_deflateTune
+#  define deflate_copyright     unity_z_deflate_copyright
+#  define get_crc_table         unity_z_get_crc_table
+#  define gzclearerr            unity_z_gzclearerr
+#  define gzclose               unity_z_gzclose
+#  define gzdirect              unity_z_gzdirect
+#  define gzdopen               unity_z_gzdopen
+#  define gzeof                 unity_z_gzeof
+#  define gzerror               unity_z_gzerror
+#  define gzflush               unity_z_gzflush
+#  define gzgetc                unity_z_gzgetc
+#  define gzgets                unity_z_gzgets
+#  define gzopen                unity_z_gzopen
+#  define gzprintf              unity_z_gzprintf
+#  define gzputc                unity_z_gzputc
+#  define gzputs                unity_z_gzputs
+#  define gzread                unity_z_gzread
+#  define gzrewind              unity_z_gzrewind
+#  define gzseek                unity_z_gzseek
+#  define gzsetparams           unity_z_gzsetparams
+#  define gztell                unity_z_gztell
+#  define gzungetc              unity_z_gzungetc
+#  define gzwrite               unity_z_gzwrite
+#  define inflate               unity_z_inflate
+#  define inflateBack           unity_z_inflateBack
+#  define inflateBackEnd        unity_z_inflateBackEnd
+#  define inflateBackInit_      unity_z_inflateBackInit_
+#  define inflateCopy           unity_z_inflateCopy
+#  define inflateEnd            unity_z_inflateEnd
+#  define inflateGetHeader      unity_z_inflateGetHeader
+#  define inflateInit2_         unity_z_inflateInit2_
+#  define inflateInit_          unity_z_inflateInit_
+#  define inflatePrime          unity_z_inflatePrime
+#  define inflateReset          unity_z_inflateReset
+#  define inflateSetDictionary  unity_z_inflateSetDictionary
+#  define inflateSync           unity_z_inflateSync
+#  define inflateSyncPoint      unity_z_inflateSyncPoint
+#  define inflateUndermine      unity_z_inflateUndermine
+#  define inflate_copyright     unity_z_inflate_copyright
+#  define inflate_fast          unity_z_inflate_fast
+#  define inflate_table         unity_z_inflate_table
+#  define uncompress            unity_z_uncompress
+#  define zError                unity_z_zError
+#  define z_errmsg              unity_z_z_errmsg
+#  define zcalloc               unity_z_zcalloc
+#  define zcfree                unity_z_zcfree
+#  define zlibCompileFlags      unity_z_zlibCompileFlags
+#  define zlibVersion           unity_z_zlibVersion
+
+/* all zlib typedefs in zlib.h and zconf.h */
+#  define Byte                  unity_z_Byte
+#  define Bytef                 unity_z_Bytef
+#  define alloc_func            unity_z_alloc_func
+#  define charf                 unity_z_charf
+#  define free_func             unity_z_free_func
+#  define gzFile                unity_z_gzFile
+#  define gz_header             unity_z_gz_header
+#  define gz_headerp            unity_z_gz_headerp
+#  define in_func               unity_z_in_func
+#  define intf                  unity_z_intf
+#  define out_func              unity_z_out_func
+#  define uInt                  unity_z_uInt
+#  define uIntf                 unity_z_uIntf
+#  define uLong                 unity_z_uLong
+#  define uLongf                unity_z_uLongf
+#  define voidp                 unity_z_voidp
+#  define voidp                 unity_z_voidp
+#  define voidpc                unity_z_voidpc
+#  define voidpc                unity_z_voidpc
+#  define voidpf                unity_z_voidpf
+#  define voidpf                unity_z_voidpf
+#  define z_stream              unity_z_z_stream
+#  define z_streamp             unity_z_z_streamp
+
+/* all zlib structs in zlib.h and zconf.h */
+#  define gz_header_s           unity_z_gz_header_s
+#  define internal_state        unity_z_internal_state
+#  define z_stream_s            unity_z_z_stream_s
+
 #endif
 
 #if defined(__MSDOS__) && !defined(MSDOS)
@@ -257,9 +321,7 @@
 #  define FAR
 #endif
 
-#if !defined(__MACTYPES__)
 typedef unsigned char  Byte;  /* 8 bits */
-#endif
 typedef unsigned int   uInt;  /* 16 bits or more */
 typedef unsigned long  uLong; /* 32 bits or more */
 

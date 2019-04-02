@@ -40,6 +40,10 @@ extern voidp  malloc OF((uInt size));
 extern void   free   OF((voidpf ptr));
 #endif
 
+#ifdef _MSC_VER
+#define snprintf(buffer,size,...) _snprintf((buffer),(size),__VA_ARGS__)
+#endif
+
 #define ALLOC(size) malloc(size)
 #define TRYFREE(p) {if (p) free(p);}
 
@@ -128,7 +132,7 @@ local gzFile gz_open (path, mode, fd)
     if (s->path == NULL) {
         return destroy(s), (gzFile)Z_NULL;
     }
-    strcpy(s->path, path); /* do this early for debugging */
+    strncpy(s->path, path, strlen(path)+1); /* do this early for debugging */
 
     s->mode = '\0';
     do {
@@ -223,7 +227,7 @@ gzFile ZEXPORT gzdopen (fd, mode)
     char name[46];      /* allow for up to 128-bit integers */
 
     if (fd < 0) return (gzFile)Z_NULL;
-    sprintf(name, "<fd:%d>", fd); /* for debugging */
+    snprintf(name, sizeof(name), "<fd:%d>", fd); /* for debugging */
 
     return gz_open (name, mode, fd);
 }
@@ -989,6 +993,7 @@ const char * ZEXPORT gzerror (file, errnum)
     int *errnum;
 {
     char *m;
+    size_t len;
     gz_stream *s = (gz_stream*)file;
 
     if (s == NULL) {
@@ -1003,11 +1008,12 @@ const char * ZEXPORT gzerror (file, errnum)
     if (m == NULL || *m == '\0') m = (char*)ERR_MSG(s->z_err);
 
     TRYFREE(s->msg);
-    s->msg = (char*)ALLOC(strlen(s->path) + strlen(m) + 3);
+    len = strlen(s->path) + strlen(m) + 3;
+    s->msg = (char*)ALLOC(len);
     if (s->msg == Z_NULL) return (const char*)ERR_MSG(Z_MEM_ERROR);
-    strcpy(s->msg, s->path);
-    strcat(s->msg, ": ");
-    strcat(s->msg, m);
+    strncpy(s->msg, s->path, len);
+    strncat(s->msg, ": ", len - strlen(s->msg));
+    strncat(s->msg, m, len - strlen(s->msg));
     return (const char*)s->msg;
 }
 
