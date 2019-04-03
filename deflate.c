@@ -1486,7 +1486,7 @@ local void fill_window(s)
     unsigned more;    /* Amount of free space at the end of the window. */
     uInt wsize = s->w_size;
 
-    Assert(s->lookahead < MIN_LOOKAHEAD, "already enough lookahead");
+    ZAssert(s->lookahead < MIN_LOOKAHEAD, "already enough lookahead");
 
     do {
         more = (unsigned)(s->window_size -(ulg)s->lookahead -(ulg)s->strstart);
@@ -1594,7 +1594,7 @@ local void fill_window(s)
         }
     }
 
-    Assert((ulg)s->strstart <= s->window_size - MIN_LOOKAHEAD,
+    ZAssert((ulg)s->strstart <= s->window_size - MIN_LOOKAHEAD,
            "not enough room for search");
 }
 
@@ -2092,7 +2092,7 @@ local block_state deflate_rle(s, flush)
                 if (s->match_length > s->lookahead)
                     s->match_length = s->lookahead;
             }
-            Assert(scan <= s->window+(uInt)(s->window_size-1), "wild scan");
+            ZAssert(scan <= s->window+(uInt)(s->window_size-1), "wild scan");
         }
 
         /* Emit match if have run of MIN_MATCH or longer, else emit literal */
