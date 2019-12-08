@@ -1,8 +1,8 @@
-%Target Lib_zlib
+%Target "Lib_zlib"
 {
 	Compile
 	{
-		Warnings Off
+		Warnings "Off"
 		{
 			!!Compile.Type "C"
 		}
@@ -13,45 +13,45 @@
 		Type "StaticLibrary"
 		Group "External/zlib"
 	}
-	%Group Source
+	%Group "Source"
 	{
-		%Group Headers
+		%Group "Headers"
 		{
-			%File ^*.h
+			%File "^*.h"
 		}
-		%Group contrib
+		%Group "contrib"
 		{
-			%Group minizip
+			%Group "minizip"
 			{
 				%File "contrib/minizip/ioapi.c"
 				%File "contrib/minizip/iowin32.c"
 				{
 					Compile.Disabled true
 					{
-						!PlatformFamily Windows
+						!PlatformFamily "Windows"
 					}
 				}
 				%File "contrib/minizip/unzip.c"
 				%File "contrib/minizip/zip.c"
 			}
 		}
-		%Group Library
+		%Group "Library"
 		{
-			%File adler32.c
-			%File compress.c
-			%File crc32.c
-			%File deflate.c
-			%File gzclose.c
-			%File gzlib.c
-			%File gzread.c
-			%File gzwrite.c
-			%File inflate.c
-			%File infback.c
-			%File inftrees.c
-			%File inffast.c
-			%File trees.c
-			%File uncompr.c
-			%File zutil.c
+			%File "adler32.c"
+			%File "compress.c"
+			%File "crc32.c"
+			%File "deflate.c"
+			%File "gzclose.c"
+			%File "gzlib.c"
+			%File "gzread.c"
+			%File "gzwrite.c"
+			%File "inflate.c"
+			%File "infback.c"
+			%File "inftrees.c"
+			%File "inffast.c"
+			%File "trees.c"
+			%File "uncompr.c"
+			%File "zutil.c"
 		}
 	}
 }
