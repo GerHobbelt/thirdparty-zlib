@@ -252,12 +252,54 @@ unsigned long crc32_vpmsum(unsigned long, const unsigned char FAR *, z_size_t);
 #endif
 #endif
 
+#ifdef HAVE_S390X_VX
+#include <sys/auxv.h>
+
+#define VX_MIN_LEN 64
+#define VX_ALIGNMENT 16L
+#define VX_ALIGN_MASK (VX_ALIGNMENT - 1)
+
+unsigned int crc32_le_vgfm_16(unsigned int crc, const unsigned char FAR *buf, z_size_t len);
+
+local unsigned long s390_crc32_vx(unsigned long crc, const unsigned char FAR *buf, z_size_t len)
+{
+    uint64_t prealign, aligned, remaining;
+
+    if (buf == Z_NULL) return 0UL;
+
+    if (len < VX_MIN_LEN + VX_ALIGN_MASK)
+        return crc32_big(crc, buf, len);
+
+    if ((uintptr_t)buf & VX_ALIGN_MASK) {
+        prealign = VX_ALIGNMENT - ((uintptr_t)buf & VX_ALIGN_MASK);
+        len -= prealign;
+        crc = crc32_big(crc, buf, prealign);
+        buf += prealign;
+    }
+    aligned = len & ~VX_ALIGN_MASK;
+    remaining = len & VX_ALIGN_MASK;
+
+    crc = crc32_le_vgfm_16(crc ^ 0xffffffff, buf, (size_t)aligned) ^ 0xffffffff;
+
+    if (remaining)
+        crc = crc32_big(crc, buf + aligned, remaining);
+
+    return crc;
+}
+#endif
+
 /* due to a quirk of gnu_indirect_function - "local" (aka static) is applied to
  * crc32_z which is not desired. crc32_z_ifunc is implictly "local" */
 #ifndef Z_IFUNC_ASM
 local
 #endif
-unsigned long (*(crc32_z_ifunc(void)))(unsigned long, const unsigned char FAR *, z_size_t)
+unsigned long (*(crc32_z_ifunc(
+#ifdef __s390__
+unsigned long hwcap
+#else
+void
+#endif
+)))(unsigned long, const unsigned char FAR *, z_size_t)
 {
 #if _ARCH_PWR8==1
 #if defined(__BUILTIN_CPU_SUPPORTS__)
@@ -268,6 +310,11 @@ unsigned long (*(crc32_z_ifunc(void)))(unsigned long, const unsigned char FAR *,
         return crc32_vpmsum;
 #endif
 #endif /* _ARCH_PWR8 */
+
+#ifdef HAVE_S390X_VX
+    if (hwcap & HWCAP_S390_VX)
+        return s390_crc32_vx;
+#endif
 
 /* return a function pointer for optimized arches here */
 
@@ -301,7 +348,11 @@ unsigned long ZEXPORT crc32_z(crc, buf, len)
     static unsigned long ZEXPORT (*crc32_func)(unsigned long, const unsigned char FAR *, z_size_t) = NULL;
 
     if (!crc32_func)
-        crc32_func = crc32_z_ifunc();
+        crc32_func = crc32_z_ifunc(
+#ifdef __s390__
+            getauxval(AT_HWCAP)
+#endif
+        );
     return (*crc32_func)(crc, buf, len);
 }
 
