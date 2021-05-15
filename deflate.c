@@ -1015,7 +1015,7 @@ int ZEXPORT deflate (strm, flush)
      */
     if (strm->avail_in != 0 || s->lookahead != 0 ||
         (flush != Z_NO_FLUSH && s->status != FINISH_STATE)) {
-        block_state bstate;
+        block_state bstate = 0;
 
         bstate = DEFLATE_HOOK(strm, flush, &bstate) ? bstate :
                  s->level == 0 ? deflate_stored(s, flush) :

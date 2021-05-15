@@ -11,25 +11,25 @@
 #  include <stdlib.h>
 #endif
 
-void test_crc32  OF((uLong crc, Byte* buf, z_size_t len, uLong chk, int line));
+void test_crc32  OF((uLong crc, char* buf, z_size_t len, uLong chk, int line));
 int main         OF((void));
 
 typedef struct {
     int line;
 	uLong crc;
-    Byte* buf;
+    char* buf;
 	int len;
     uLong expect;
 } crc32_test;
 
 void test_crc32(crc, buf, len, chk, line)
     uLong crc;
-    Byte *buf;
+    char *buf;
     z_size_t len;
     uLong chk;
     int line;
 {
-    uLong res = crc32(crc, buf, len);
+    uLong res = crc32(crc, (Bytef *) buf, len);
 	if (res != chk) {
         fprintf(stderr, "FAIL [%d]: crc32 returned 0x%08X expected 0x%08X\n",
                 line, (unsigned int)res, (unsigned int)chk);

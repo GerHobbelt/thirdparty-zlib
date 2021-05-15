@@ -302,7 +302,7 @@ unsigned long ZEXPORT crc32_z(crc, buf, len)
 
     if (!crc32_func)
         crc32_func = crc32_z_ifunc();
-        return (*crc32_func)(crc, buf, len);
+    return (*crc32_func)(crc, buf, len);
 }
 
 #endif /* defined(Z_IFUNC_ASM) || defined(Z_IFUNC_NATIVE) */
