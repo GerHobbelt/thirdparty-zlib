@@ -509,7 +509,7 @@ int ZEXPORT deflateResetKeep (strm)
         s->wrap == 2 ? crc32(0L, Z_NULL, 0) :
 #endif
         adler32(0L, Z_NULL, 0);
-    s->last_flush = Z_NO_FLUSH;
+    s->last_flush = -2;
 
     _tr_init(s);
 
@@ -606,13 +606,13 @@ int ZEXPORT deflateParams(strm, level, strategy)
     func = configuration_table[s->level].func;
 
     if ((strategy != s->strategy || func != configuration_table[level].func ||
-        hook_flush != Z_NO_FLUSH) && s->high_water) {
+        hook_flush != Z_NO_FLUSH) && s->last_flush != -2) {
         /* Flush the last buffer: */
         int err = deflate(strm, RANK(hook_flush) > RANK(Z_BLOCK) ?
                           hook_flush : Z_BLOCK); 
         if (err == Z_STREAM_ERROR)
             return err;
-        if (strm->avail_out == 0)
+        if (strm->avail_in || (s->strstart - s->block_start) + s->lookahead)
             return Z_BUF_ERROR;
     }
     if (s->level != level) {
