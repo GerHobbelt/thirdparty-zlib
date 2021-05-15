@@ -199,12 +199,77 @@ const z_crc_t FAR * ZEXPORT get_crc_table()
 #define DO8 DO1; DO1; DO1; DO1; DO1; DO1; DO1; DO1
 
 /* ========================================================================= */
-unsigned long ZEXPORT crc32_z(crc, buf, len)
+local
+unsigned long ZEXPORT crc32_table_lookup(crc, buf, len)
     unsigned long crc;
     const unsigned char FAR *buf;
     z_size_t len;
 {
     if (buf == Z_NULL) return 0UL;
+
+    crc = crc ^ 0xffffffffUL;
+    while (len >= 8) {
+        DO8;
+        len -= 8;
+    }
+    if (len) do {
+        DO1;
+    } while (--len);
+    return crc ^ 0xffffffffUL;
+}
+
+/* Small helper function to compare optfun against the reference table lookup
+ * return test_ref_comparision_##optfn in crc32_z_ifunc
+#include <assert.h>
+#define TEST_COMPARE(optfn) \
+   static unsigned long test_ref_comparision_ ## optfn(unsigned long crc, const unsigned char FAR *p, z_size_t len) \
+   { \
+     unsigned long crc_tbl_lookup = crc32_table_lookup(crc, p, len); \
+     unsigned long optcrc = optfn(crc, p, len); \
+     assert( optcrc == crc_tbl_lookup ); \
+     return optcrc; \
+   }
+*/
+
+#ifdef Z_IFUNC_ASM
+unsigned long (*(crc32_z_ifunc(void)))(unsigned long, const unsigned char FAR *, z_size_t)
+    __asm__ ("crc32_z");
+__asm__(".type crc32_z, %gnu_indirect_function");
+#elif defined(Z_IFUNC_NATIVE)
+unsigned long ZEXPORT crc32_z(
+    unsigned long crc,
+    const unsigned char FAR *buf,
+    z_size_t len)
+  __attribute__ ((ifunc ("crc32_z_ifunc")));
+#endif
+
+#if _ARCH_PWR8==1
+unsigned long crc32_vpmsum(unsigned long, const unsigned char FAR *, z_size_t);
+/* for testing TEST_COMPARE(crc32_vpmsum) */
+#ifndef __BUILTIN_CPU_SUPPORTS__
+#include <sys/auxv.h>
+#include <bits/hwcap.h>
+#endif
+#endif
+
+/* due to a quirk of gnu_indirect_function - "local" (aka static) is applied to
+ * crc32_z which is not desired. crc32_z_ifunc is implictly "local" */
+#ifndef Z_IFUNC_ASM
+local
+#endif
+unsigned long (*(crc32_z_ifunc(void)))(unsigned long, const unsigned char FAR *, z_size_t)
+{
+#if _ARCH_PWR8==1
+#if defined(__BUILTIN_CPU_SUPPORTS__)
+    if (__builtin_cpu_supports("arch_2_07"))
+        return crc32_vpmsum;
+#else
+    if (getauxval(AT_HWCAP2) & PPC_FEATURE2_ARCH_2_07)
+        return crc32_vpmsum;
+#endif
+#endif /* _ARCH_PWR8 */
+
+/* return a function pointer for optimized arches here */
 
 #ifdef DYNAMIC_CRC_TABLE
     if (crc_table_empty)
@@ -217,21 +282,30 @@ unsigned long ZEXPORT crc32_z(crc, buf, len)
 
         endian = 1;
         if (*((unsigned char *)(&endian)))
-            return crc32_little(crc, buf, len);
+            return crc32_little;
         else
-            return crc32_big(crc, buf, len);
+            return crc32_big;
     }
 #endif /* BYFOUR */
-    crc = crc ^ 0xffffffffUL;
-    while (len >= 8) {
-        DO8;
-        len -= 8;
-    }
-    if (len) do {
-        DO1;
-    } while (--len);
-    return crc ^ 0xffffffffUL;
+    
+    return crc32_table_lookup;
 }
+
+#if !defined(Z_IFUNC_ASM) && !defined(Z_IFUNC_NATIVE)
+
+unsigned long ZEXPORT crc32_z(crc, buf, len)
+    unsigned long crc;
+    const unsigned char FAR *buf;
+    z_size_t len;
+{
+    static unsigned long ZEXPORT (*crc32_func)(unsigned long, const unsigned char FAR *, z_size_t) = NULL;
+
+    if (!crc32_func)
+        crc32_func = crc32_z_ifunc();
+        return (*crc32_func)(crc, buf, len);
+}
+
+#endif /* defined(Z_IFUNC_ASM) || defined(Z_IFUNC_NATIVE) */
 
 /* ========================================================================= */
 unsigned long ZEXPORT crc32(crc, buf, len)
@@ -271,6 +345,7 @@ local unsigned long crc32_little(crc, buf, len)
     register z_crc_t c;
     register const z_crc_t FAR *buf4;
 
+    if (buf == Z_NULL) return 0UL;
     c = (z_crc_t)crc;
     c = ~c;
     while (len && ((ptrdiff_t)buf & 3)) {
@@ -311,6 +386,7 @@ local unsigned long crc32_big(crc, buf, len)
     register z_crc_t c;
     register const z_crc_t FAR *buf4;
 
+    if (buf == Z_NULL) return 0UL;
     c = ZSWAP32((z_crc_t)crc);
     c = ~c;
     while (len && ((ptrdiff_t)buf & 3)) {
