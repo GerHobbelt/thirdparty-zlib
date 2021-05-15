@@ -74,7 +74,7 @@ const char deflate_copyright[] =
 #define DEFLATE_SET_DICTIONARY_HOOK(strm, dict, dict_len) do {} while (0)
 #define DEFLATE_GET_DICTIONARY_HOOK(strm, dict, dict_len) do {} while (0)
 #define DEFLATE_RESET_KEEP_HOOK(strm) do {} while (0)
-#define DEFLATE_PARAMS_HOOK(strm, level, strategy) do {} while (0)
+#define DEFLATE_PARAMS_HOOK(strm, level, strategy, hook_flush) do {} while (0)
 #define DEFLATE_BOUND_ADJUST_COMPLEN(strm, complen, sourceLen) do {} while (0)
 #define DEFLATE_NEED_CONSERVATIVE_BOUND(strm) 0
 #define DEFLATE_HOOK(strm, flush, bstate) 0
@@ -589,6 +589,7 @@ int ZEXPORT deflateParams(strm, level, strategy)
 {
     deflate_state *s;
     compress_func func;
+    int hook_flush = Z_NO_FLUSH;
 
     if (deflateStateCheck(strm)) return Z_STREAM_ERROR;
     s = strm->state;
@@ -601,13 +602,14 @@ int ZEXPORT deflateParams(strm, level, strategy)
     if (level < 0 || level > 9 || strategy < 0 || strategy > Z_FIXED) {
         return Z_STREAM_ERROR;
     }
-    DEFLATE_PARAMS_HOOK(strm, level, strategy);
+    DEFLATE_PARAMS_HOOK(strm, level, strategy, &hook_flush);
     func = configuration_table[s->level].func;
 
-    if ((strategy != s->strategy || func != configuration_table[level].func) &&
-        s->high_water) {
+    if ((strategy != s->strategy || func != configuration_table[level].func ||
+        hook_flush != Z_NO_FLUSH) && s->high_water) {
         /* Flush the last buffer: */
-        int err = deflate(strm, Z_BLOCK);
+        int err = deflate(strm, RANK(hook_flush) > RANK(Z_BLOCK) ?
+                          hook_flush : Z_BLOCK); 
         if (err == Z_STREAM_ERROR)
             return err;
         if (strm->avail_out == 0)
@@ -1065,7 +1067,6 @@ int ZEXPORT deflate (strm, flush)
     }
 
     if (flush != Z_FINISH) return Z_OK;
-    if (s->wrap <= 0) return Z_STREAM_END;
 
     /* Write the trailer */
 #ifdef GZIP
@@ -1081,7 +1082,7 @@ int ZEXPORT deflate (strm, flush)
     }
     else
 #endif
-    {
+    if (s->wrap == 1) {
         putShortMSB(s, (uInt)(strm->adler >> 16));
         putShortMSB(s, (uInt)(strm->adler & 0xffff));
     }
@@ -1090,7 +1091,11 @@ int ZEXPORT deflate (strm, flush)
      * to flush the rest.
      */
     if (s->wrap > 0) s->wrap = -s->wrap; /* write the trailer only once! */
-    return s->pending != 0 ? Z_OK : Z_STREAM_END;
+    if (s->pending == 0) {
+        Assert(s->bi_valid == 0, "bi_buf not flushed");
+        return Z_STREAM_END;
+    }
+    return Z_OK; 
 }
 
 /* ========================================================================= */
