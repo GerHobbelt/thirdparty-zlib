@@ -11,6 +11,7 @@ int ZLIB_INTERNAL dfltcc_deflate_params OF((z_streamp strm,
                                             int level,
                                             int strategy,
                                             int *flush)); 
+int ZLIB_INTERNAL dfltcc_deflate_done OF((z_streamp strm, int flush));
 int ZLIB_INTERNAL dfltcc_deflate_set_dictionary OF((z_streamp strm,
                                                     const Bytef *dictionary,
                                                     uInt dict_length));
@@ -41,6 +42,7 @@ int ZLIB_INTERNAL dfltcc_deflate_get_dictionary OF((z_streamp strm,
         if (err == Z_STREAM_ERROR) \
             return err; \
     } while (0)
+#define DEFLATE_DONE dfltcc_deflate_done
 #define DEFLATE_BOUND_ADJUST_COMPLEN(strm, complen, source_len) \
     do { \
         if (dfltcc_can_deflate((strm))) \

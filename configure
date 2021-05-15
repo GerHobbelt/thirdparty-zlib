@@ -139,7 +139,7 @@ case "$1" in
     -w* | --warn) warn=1; shift ;;
     -d* | --debug) debug=1; shift ;;
     --dfltcc)
-	    CFLAGS="$CFLAGS -DDFLTCC"
+	    CFLAGS="$CFLAGS -DDFLTCC -DDFLTCC_LEVEL_MASK=0x7e"
       OBJC="$OBJC dfltcc.o"
 	    PIC_OBJC="$PIC_OBJC dfltcc.lo"
       shift
@@ -838,7 +838,7 @@ cat > $test.c << EOF
 #include <sys/sdt.h>
 int main() { return 0; }
 EOF
-if try ${CC} ${CFLAGS} $test.c; then
+ if try $CC -c $CFLAGS $test.c; then
     echo "Checking for sys/sdt.h ... Yes." | tee -a configure.log
     CFLAGS="$CFLAGS -DHAVE_SYS_SDT_H"
     SFLAGS="$SFLAGS -DHAVE_SYS_SDT_H"

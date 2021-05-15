@@ -350,8 +350,12 @@ int ZLIB_INTERNAL dfltcc_deflate(strm, flush, result)
     int soft_bcc;
     int no_flush;
 
-    if (!dfltcc_can_deflate(strm))
+    if (!dfltcc_can_deflate(strm)) {
+        /* Clear history. */
+        if (flush == Z_FULL_FLUSH)
+            param->hl = 0;
         return 0;
+    }
 
 again:
     masked_avail_in = 0;
@@ -376,7 +380,8 @@ again:
         /* Clear history. */
         if (flush == Z_FULL_FLUSH)
             param->hl = 0; 
-        *result = need_more;
+        /* Trigger block post-processing if necessary. */
+        *result = no_flush ? need_more : block_done;
         return 1;
     }
 
@@ -403,11 +408,16 @@ again:
             param->bcf = 0;
             dfltcc_state->block_threshold =
                 strm->total_in + dfltcc_state->block_size;
-            if (strm->avail_out == 0) {
-                *result = need_more;
-                return 1;
-            }
         }
+    }
+
+    /* No space for compressed data. If we proceed, dfltcc_cmpr() will return
+     * DFLTCC_CC_OP1_TOO_SHORT without buffering header bits, but we will still
+     * set BCF=1, which is wrong. Avoid complications and return early.
+     */
+    if (strm->avail_out == 0) {
+        *result = need_more;
+        return 1;
     }
 
     /* The caller gave us too much data. Pass only one block worth of
@@ -737,10 +747,15 @@ __attribute__((constructor)) local void init_globals(void)
      * compiling with -m31, gcc defaults to ESA mode, however, since the kernel
      * is 64-bit, it's always z/Architecture mode at runtime.
      */
-    __asm__ volatile(".machinemode push\n"
+     __asm__ volatile(
+#ifndef __clang__
+                     ".machinemode push\n"
                      ".machinemode zarch\n"
+#endif
                      "stfle %[facilities]\n"
+#ifndef __clang__
                      ".machinemode pop\n"
+#endif
                      : [facilities] "=Q" (cpu_facilities)
                      , [r0] "+r" (r0)
                      :
@@ -872,6 +887,28 @@ int ZLIB_INTERNAL dfltcc_deflate_params(strm, level, strategy, flush)
     return Z_OK; 
 }
 
+int ZLIB_INTERNAL dfltcc_deflate_done(strm, flush)
+    z_streamp strm;
+    int flush;
+{
+    deflate_state FAR *state = (deflate_state FAR *)strm->state;
+    struct dfltcc_state FAR *dfltcc_state = GET_DFLTCC_STATE(state);
+    struct dfltcc_param_v0 FAR *param = &dfltcc_state->param;
+
+    /* When deflate(Z_FULL_FLUSH) is called with small avail_out, it might
+     * close the block without resetting the compression state. Detect this
+     * situation and return that deflation is not done.
+     */
+    if (flush == Z_FULL_FLUSH && strm->avail_out == 0)
+        return 0;
+
+    /* Return that deflation is not done if DFLTCC is used and either it
+     * buffered some data (Continuation Flag is set), or has not written EOBS
+     * yet (Block-Continuation Flag is set).
+     */
+    return !dfltcc_can_deflate(strm) || (!param->cf && !param->bcf);
+}
+
 /*
    Preloading history.
 */
@@ -925,6 +962,7 @@ int ZLIB_INTERNAL dfltcc_deflate_set_dictionary(strm, dictionary, dict_length)
 
     append_history(param, state->window, dictionary, dict_length);
     state->strstart = 1; /* Add FDICT to zlib header */
+    state->block_start = state->strstart; /* Make deflate_stored happy */
     return Z_OK;
 }
 

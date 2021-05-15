@@ -75,6 +75,7 @@ const char deflate_copyright[] =
 #define DEFLATE_GET_DICTIONARY_HOOK(strm, dict, dict_len) do {} while (0)
 #define DEFLATE_RESET_KEEP_HOOK(strm) do {} while (0)
 #define DEFLATE_PARAMS_HOOK(strm, level, strategy, hook_flush) do {} while (0)
+#define DEFLATE_DONE(strm, flush) 1
 #define DEFLATE_BOUND_ADJUST_COMPLEN(strm, complen, sourceLen) do {} while (0)
 #define DEFLATE_NEED_CONSERVATIVE_BOUND(strm) 0
 #define DEFLATE_HOOK(strm, flush, bstate) 0
@@ -605,14 +606,15 @@ int ZEXPORT deflateParams(strm, level, strategy)
     DEFLATE_PARAMS_HOOK(strm, level, strategy, &hook_flush);
     func = configuration_table[s->level].func;
 
-    if ((strategy != s->strategy || func != configuration_table[level].func ||
-        hook_flush != Z_NO_FLUSH) && s->last_flush != -2) {
+    if (((strategy != s->strategy || func != configuration_table[level].func) &&
+        s->last_flush != -2) || hook_flush != Z_NO_FLUSH) {
         /* Flush the last buffer: */
-        int err = deflate(strm, RANK(hook_flush) > RANK(Z_BLOCK) ?
-                          hook_flush : Z_BLOCK); 
+        int flush = RANK(hook_flush) > RANK(Z_BLOCK) ? hook_flush : Z_BLOCK;
+        int err = deflate(strm, flush);
         if (err == Z_STREAM_ERROR)
             return err;
-        if (strm->avail_in || (s->strstart - s->block_start) + s->lookahead)
+        if (strm->avail_in || (s->strstart - s->block_start) + s->lookahead ||
+            !DEFLATE_DONE(strm, flush))
             return Z_BUF_ERROR;
     }
     if (s->level != level) {
