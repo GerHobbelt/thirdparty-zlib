@@ -826,6 +826,19 @@ EOF
   fi
 fi
 
+# Check whether sys/sdt.h is available
+cat > $test.c << EOF
+#include <sys/sdt.h>
+int main() { return 0; }
+EOF
+if try ${CC} ${CFLAGS} $test.c; then
+    echo "Checking for sys/sdt.h ... Yes." | tee -a configure.log
+    CFLAGS="$CFLAGS -DHAVE_SYS_SDT_H"
+    SFLAGS="$SFLAGS -DHAVE_SYS_SDT_H"
+else
+    echo "Checking for sys/sdt.h ... No." | tee -a configure.log
+fi
+
 # show the results in the log
 echo >> configure.log
 echo ALL = $ALL >> configure.log

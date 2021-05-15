@@ -61,15 +61,29 @@ const char deflate_copyright[] =
  */
 
 /* ===========================================================================
+ *  Architecture-specific bits.
+ */
+#ifdef DFLTCC
+#  include "contrib/s390/dfltcc_deflate.h"
+#else
+#define ZALLOC_STATE ZALLOC
+#define ZFREE_STATE ZFREE
+#define ZCOPY_STATE zmemcpy
+#define ZALLOC_WINDOW ZALLOC
+#define TRY_FREE_WINDOW TRY_FREE
+#define DEFLATE_SET_DICTIONARY_HOOK(strm, dict, dict_len) do {} while (0)
+#define DEFLATE_GET_DICTIONARY_HOOK(strm, dict, dict_len) do {} while (0)
+#define DEFLATE_RESET_KEEP_HOOK(strm) do {} while (0)
+#define DEFLATE_PARAMS_HOOK(strm, level, strategy) do {} while (0)
+#define DEFLATE_BOUND_ADJUST_COMPLEN(strm, complen, sourceLen) do {} while (0)
+#define DEFLATE_NEED_CONSERVATIVE_BOUND(strm) 0
+#define DEFLATE_HOOK(strm, flush, bstate) 0
+#define DEFLATE_NEED_CHECKSUM(strm) 1
+#endif
+
+/* ===========================================================================
  *  Function prototypes.
  */
-typedef enum {
-    need_more,      /* block not completed, need more input or more output */
-    block_done,     /* block flush performed */
-    finish_started, /* finish started, need only more output at next deflate */
-    finish_done     /* finish done, accept no more input or output */
-} block_state;
-
 typedef block_state (*compress_func) OF((deflate_state *s, int flush));
 /* Compression function. Returns the block state after the call. */
 
@@ -85,7 +99,6 @@ local block_state deflate_rle    OF((deflate_state *s, int flush));
 local block_state deflate_huff   OF((deflate_state *s, int flush));
 local void lm_init        OF((deflate_state *s));
 local void putShortMSB    OF((deflate_state *s, uInt b));
-local void flush_pending  OF((z_streamp strm));
 local unsigned read_buf   OF((z_streamp strm, Bytef *buf, unsigned size));
 #ifdef ASMV
 #  pragma message("Assembler code may have bugs -- use at your own risk")
@@ -301,7 +314,7 @@ int ZEXPORT deflateInit2_(strm, level, method, windowBits, memLevel, strategy,
         return Z_STREAM_ERROR;
     }
     if (windowBits == 8) windowBits = 9;  /* until 256-byte window bug fixed */
-    s = (deflate_state *) ZALLOC(strm, 1, sizeof(deflate_state));
+    s = (deflate_state *) ZALLOC_STATE(strm, 1, sizeof(deflate_state));
     if (s == Z_NULL) return Z_MEM_ERROR;
     strm->state = (struct internal_state FAR *)s;
     s->strm = strm;
@@ -318,7 +331,7 @@ int ZEXPORT deflateInit2_(strm, level, method, windowBits, memLevel, strategy,
     s->hash_mask = s->hash_size - 1;
     s->hash_shift =  ((s->hash_bits+MIN_MATCH-1)/MIN_MATCH);
 
-    s->window = (Bytef *) ZALLOC(strm, s->w_size, 2*sizeof(Byte));
+    s->window = (Bytef *) ZALLOC_WINDOW(strm, s->w_size, 2*sizeof(Byte));
     s->prev   = (Posf *)  ZALLOC(strm, s->w_size, sizeof(Pos));
     s->head   = (Posf *)  ZALLOC(strm, s->hash_size, sizeof(Pos));
 
@@ -394,6 +407,7 @@ int ZEXPORT deflateSetDictionary (strm, dictionary, dictLength)
     /* when using zlib wrappers, compute Adler-32 for provided dictionary */
     if (wrap == 1)
         strm->adler = adler32(strm->adler, dictionary, dictLength);
+    DEFLATE_SET_DICTIONARY_HOOK(strm, dictionary, dictLength);
     s->wrap = 0;                    /* avoid computing Adler-32 in read_buf */
 
     /* if dictionary would fill window, just replace the history */
@@ -452,6 +466,7 @@ int ZEXPORT deflateGetDictionary (strm, dictionary, dictLength)
 
     if (deflateStateCheck(strm))
         return Z_STREAM_ERROR;
+    DEFLATE_GET_DICTIONARY_HOOK(strm, dictionary, dictLength);
     s = strm->state;
     len = s->strstart + s->lookahead;
     if (len > s->w_size)
@@ -497,6 +512,8 @@ int ZEXPORT deflateResetKeep (strm)
     s->last_flush = Z_NO_FLUSH;
 
     _tr_init(s);
+
+    DEFLATE_RESET_KEEP_HOOK(strm);
 
     return Z_OK;
 }
@@ -584,6 +601,7 @@ int ZEXPORT deflateParams(strm, level, strategy)
     if (level < 0 || level > 9 || strategy < 0 || strategy > Z_FIXED) {
         return Z_STREAM_ERROR;
     }
+    DEFLATE_PARAMS_HOOK(strm, level, strategy);
     func = configuration_table[s->level].func;
 
     if ((strategy != s->strategy || func != configuration_table[level].func) &&
@@ -659,6 +677,7 @@ uLong ZEXPORT deflateBound(strm, sourceLen)
     /* conservative upper bound for compressed data */
     complen = sourceLen +
               ((sourceLen + 7) >> 3) + ((sourceLen + 63) >> 6) + 5;
+    DEFLATE_BOUND_ADJUST_COMPLEN(strm, complen, sourceLen);
 
     /* if can't get parameters, return conservative bound plus zlib wrapper */
     if (deflateStateCheck(strm))
@@ -700,7 +719,8 @@ uLong ZEXPORT deflateBound(strm, sourceLen)
     }
 
     /* if not default parameters, return conservative bound */
-    if (s->w_bits != 15 || s->hash_bits != 8 + 7)
+    if (DEFLATE_NEED_CONSERVATIVE_BOUND(strm) ||
+            s->w_bits != 15 || s->hash_bits != 8 + 7)
         return complen + wraplen;
 
     /* default settings: return tight bound for that case */
@@ -727,7 +747,7 @@ local void putShortMSB (s, b)
  * applications may wish to modify it to avoid allocating a large
  * strm->next_out buffer and copying into it. (See also read_buf()).
  */
-local void flush_pending(strm)
+void ZLIB_INTERNAL flush_pending(strm)
     z_streamp strm;
 {
     unsigned len;
@@ -997,7 +1017,8 @@ int ZEXPORT deflate (strm, flush)
         (flush != Z_NO_FLUSH && s->status != FINISH_STATE)) {
         block_state bstate;
 
-        bstate = s->level == 0 ? deflate_stored(s, flush) :
+        bstate = DEFLATE_HOOK(strm, flush, &bstate) ? bstate :
+                 s->level == 0 ? deflate_stored(s, flush) :
                  s->strategy == Z_HUFFMAN_ONLY ? deflate_huff(s, flush) :
                  s->strategy == Z_RLE ? deflate_rle(s, flush) :
                  (*(configuration_table[s->level].func))(s, flush);
@@ -1086,9 +1107,9 @@ int ZEXPORT deflateEnd (strm)
     TRY_FREE(strm, strm->state->pending_buf);
     TRY_FREE(strm, strm->state->head);
     TRY_FREE(strm, strm->state->prev);
-    TRY_FREE(strm, strm->state->window);
+    TRY_FREE_WINDOW(strm, strm->state->window);
 
-    ZFREE(strm, strm->state);
+    ZFREE_STATE(strm, strm->state);
     strm->state = Z_NULL;
 
     return status == BUSY_STATE ? Z_DATA_ERROR : Z_OK;
@@ -1119,13 +1140,13 @@ int ZEXPORT deflateCopy (dest, source)
 
     zmemcpy((voidpf)dest, (voidpf)source, sizeof(z_stream));
 
-    ds = (deflate_state *) ZALLOC(dest, 1, sizeof(deflate_state));
+    ds = (deflate_state *) ZALLOC_STATE(dest, 1, sizeof(deflate_state));
     if (ds == Z_NULL) return Z_MEM_ERROR;
     dest->state = (struct internal_state FAR *) ds;
-    zmemcpy((voidpf)ds, (voidpf)ss, sizeof(deflate_state));
+    ZCOPY_STATE((voidpf)ds, (voidpf)ss, sizeof(deflate_state));
     ds->strm = dest;
 
-    ds->window = (Bytef *) ZALLOC(dest, ds->w_size, 2*sizeof(Byte));
+    ds->window = (Bytef *) ZALLOC_WINDOW(dest, ds->w_size, 2*sizeof(Byte));
     ds->prev   = (Posf *)  ZALLOC(dest, ds->w_size, sizeof(Pos));
     ds->head   = (Posf *)  ZALLOC(dest, ds->hash_size, sizeof(Pos));
     overlay = (ushf *) ZALLOC(dest, ds->lit_bufsize, sizeof(ush)+2);
@@ -1174,7 +1195,8 @@ local unsigned read_buf(strm, buf, size)
     strm->avail_in  -= len;
 
     zmemcpy(buf, strm->next_in, len);
-    if (strm->state->wrap == 1) {
+        if (!DEFLATE_NEED_CHECKSUM(strm)) {}
+    else if (strm->state->wrap == 1) {
         strm->adler = adler32(strm->adler, buf, len);
     }
 #ifdef GZIP

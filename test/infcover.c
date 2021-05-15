@@ -444,7 +444,7 @@ local void cover_wrap(void)
 }
 
 /* input and output functions for inflateBack() */
-local unsigned pull(void *desc, unsigned char **buf)
+local unsigned pull(void *desc, z_const unsigned char **buf)
 {
     static unsigned int next = 0;
     static unsigned char dat[] = {0x63, 0, 2, 0};
