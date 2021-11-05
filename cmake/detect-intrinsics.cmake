@@ -13,6 +13,34 @@ macro(check_acle_intrinsics)
     set(CMAKE_REQUIRED_FLAGS)
 endmacro()
 
+macro(check_avx512_intrinsics)
+    if(CMAKE_C_COMPILER_ID MATCHES "Intel")
+        if(CMAKE_HOST_UNIX OR APPLE)
+            set(AVX2FLAG "-mavx512f")
+        else()
+            set(AVX2FLAG "/arch:AVX512")
+        endif()
+    elseif(CMAKE_C_COMPILER_ID MATCHES "GNU" OR CMAKE_C_COMPILER_ID MATCHES "Clang")
+        if(NOT NATIVEFLAG)
+            set(AVX2FLAG "-mavx512f")
+        endif()
+    endif()
+    # Check whether compiler supports AVX2 intrinics
+    set(CMAKE_REQUIRED_FLAGS "${AVX512FLAG}")
+    check_c_source_compile_or_run(
+        "#include <immintrin.h>
+        int main(void) {
+            __m512i x = _mm512_set1_epi16(2);
+            const __m512i y = _mm512_set1_epi16(1);
+            x = _mm512_subs_epu16(x, y);
+            (void)x;
+            return 0;
+        }"
+        HAVE_AVX512_INTRIN
+    )
+    set(CMAKE_REQUIRED_FLAGS)
+endmacro()
+
 macro(check_avx2_intrinsics)
     if(CMAKE_C_COMPILER_ID MATCHES "Intel")
         if(CMAKE_HOST_UNIX OR APPLE)
