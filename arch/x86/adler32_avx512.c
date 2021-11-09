@@ -34,11 +34,9 @@ Z_INTERNAL uint32_t adler32_avx512(uint32_t adler, const unsigned char *buf, siz
     if (UNLIKELY(len < 16))
         return adler32_len_16(adler, buf, len, sum2);
 
-    __m512i vs1 = _mm512_set1_epi32(adler);
-    __m512i vs2 = _mm512_set1_epi32(sum2);
-    const __mmask16 vsMask = 1U << 15;
-    vs1 = _mm512_maskz_mov_epi32(vsMask, vs1);
-    vs2 = _mm512_maskz_mov_epi32(vsMask, vs2);
+    const __mmask16 vs_mask = 1U << 15;
+    __m512i vs1 = _mm512_maskz_set1_epi32(vs_mask, adler);
+    __m512i vs2 = _mm512_maskz_set1_epi32(vs_mask, sum2);
 
     const __m512i dot1v = _mm512_set1_epi8(1);
     /* No idea why there's no setr but I guess we'll deal with it */
@@ -86,7 +84,7 @@ Z_INTERNAL uint32_t adler32_avx512(uint32_t adler, const unsigned char *buf, siz
         __m256i s1lo = _mm512_castsi512_si256(vs1);
         __m256i s2lo = _mm512_castsi512_si256(vs2);
 
-        /* Requires vextracti128 */
+        /* Requires vextracti64x4 */
         __m256i s1hi = _mm512_extracti64x4_epi64(vs1, 1);
         __m256i s2hi = _mm512_extracti64x4_epi64(vs2, 1);
         
@@ -96,23 +94,15 @@ Z_INTERNAL uint32_t adler32_avx512(uint32_t adler, const unsigned char *buf, siz
         __m512i s2lo512 = _mm512_cvtepi32_epi64(s2lo);
         __m512i s2hi512 = _mm512_cvtepi32_epi64(s2hi);
 
-        /* sum vectors in existing lanes */
-        __m512i s1Sum = _mm512_add_epi64(s1lo512, s1hi512);
-        __m512i s2Sum = _mm512_add_epi64(s2lo512, s2hi512);
+        /* Sum vectors in existing lanes */
+        __m512i s1_sum = _mm512_add_epi64(s1lo512, s1hi512);
+        __m512i s2_sum = _mm512_add_epi64(s2lo512, s2hi512);
         
-        /* In AVX2-land, this trip through GPRs will probably
-         * be unvoidable, as there's no cheap and easy conversion
-         * from 64 bit integer to 32 bit. This casting to 32 bit
-         * is cheap through GPRs (just register aliasing), and safe,
-         * as our base is significantly smaller than UINT32_MAX */
-        adler = (uint32_t)(_mm512_reduce_add_epi64(s1Sum) % BASE);
-        sum2 = (uint32_t)(_mm512_reduce_add_epi64(s2Sum) % BASE);
+        adler = (uint32_t)(_mm512_reduce_add_epi64(s1_sum) % BASE);
+        sum2 = (uint32_t)(_mm512_reduce_add_epi64(s2_sum) % BASE);
 
-        vs1 = _mm512_set1_epi32(adler);
-        vs1 = _mm512_maskz_mov_epi32(vsMask, vs1);
-
-        vs2 = _mm512_set1_epi32(sum2);
-        vs2 = _mm512_maskz_mov_epi32(vsMask, vs2);
+        vs1 = _mm512_maskz_set1_epi32(vs_mask, adler);
+        vs2 = _mm512_maskz_set1_epi32(vs_mask, sum2);
     }
 
     /* Process tail (len < 16).  */
