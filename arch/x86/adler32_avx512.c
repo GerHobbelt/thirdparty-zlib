@@ -63,7 +63,7 @@ Z_INTERNAL uint32_t adler32_avx512(uint32_t adler, const unsigned char *buf, siz
        while (k >= 64) {
            /*
               vs1 = adler + sum(c[i])
-              vs2 = sum2 + 16 vs1 + sum( (16-i+1) c[i] )
+              vs2 = sum2 + 64 vs1 + sum( (64-i+1) c[i] )
            */
            __m512i vbuf = _mm512_loadu_si512(buf);
            buf += 64;
