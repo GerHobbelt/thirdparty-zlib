@@ -153,6 +153,9 @@ extern uint32_t compare258_unaligned_sse4(const unsigned char *src0, const unsig
 #if defined(X86_AVX2) && defined(HAVE_BUILTIN_CTZ)
 extern uint32_t compare258_unaligned_avx2(const unsigned char *src0, const unsigned char *src1);
 #endif
+#if defined(X86_AVX512) && defined(HAVE_BUILTIN_CTZ)
+extern uint32_t compare258_unaligned_avx512(const unsigned char *src0, const unsigned char *src1);
+#endif
 #endif
 
 /* longest_match */
@@ -564,6 +567,10 @@ Z_INTERNAL uint32_t compare258_stub(const unsigned char *src0, const unsigned ch
 #  if defined(X86_AVX2) && defined(HAVE_BUILTIN_CTZ)
     if (x86_cpu_has_avx2)
         functable.compare258 = &compare258_unaligned_avx2;
+#  endif
+#  if defined(X86_AVX512) && defined(HAVE_BUILTIN_CTZ)
+    if (x86_cpu_has_avx512)
+        functable.compare258 = &compare258_unaligned_avx512;
 #  endif
 #endif
 
