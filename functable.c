@@ -172,6 +172,9 @@ extern uint32_t longest_match_unaligned_sse4(deflate_state *const s, Pos cur_mat
 #if defined(X86_AVX2) && defined(HAVE_BUILTIN_CTZ)
 extern uint32_t longest_match_unaligned_avx2(deflate_state *const s, Pos cur_match);
 #endif
+#if defined(X86_AVX512) && defined(HAVE_BUILTIN_CTZ)
+extern uint32_t longest_match_unaligned_avx512(deflate_state *const s, Pos cur_match);
+#endif
 #endif
 
 /* longest_match_slow */
@@ -596,6 +599,10 @@ Z_INTERNAL uint32_t longest_match_stub(deflate_state *const s, Pos cur_match) {
 #  if defined(X86_AVX2) && defined(HAVE_BUILTIN_CTZ)
     if (x86_cpu_has_avx2)
         functable.longest_match = &longest_match_unaligned_avx2;
+#  endif
+#  if defined(X86_AVX512) && defined(HAVE_BUILTIN_CTZ)
+    if (x86_cpu_has_avx512)
+        functable.longest_match = &longest_match_unaligned_avx512;
 #  endif
 #endif
 
