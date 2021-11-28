@@ -60,9 +60,13 @@
 #endif
 
 /* Minimum of a and b. */
+#ifndef MIN
 #define MIN(a, b) ((a) > (b) ? (b) : (a))
+#endif
 /* Maximum of a and b. */
+#ifndef MAX
 #define MAX(a, b) ((a) < (b) ? (b) : (a))
+#endif
 /* Ignore unused variable warning */
 #define Z_UNUSED(var) (void)(var)
 
