@@ -1,6 +1,7 @@
-/* adler32.c -- compute the Adler-32 checksum of a data stream
+/* adler32_avx512.c -- compute the Adler-32 checksum of a data stream
  * Copyright (C) 1995-2011 Mark Adler
  * Authors:
+ *   Adam Stylinski <kungfujesus06@gmail.com>
  *   Brian Bockelman <bockelman@gmail.com>
  * For conditions of distribution and use, see copyright notice in zlib.h
  */
@@ -11,7 +12,6 @@
 #include "../../adler32_p.h"
 
 #include <immintrin.h>
-#include <x86intrin.h>
 
 #ifdef X86_AVX512_ADLER32
 
@@ -39,18 +39,10 @@ Z_INTERNAL uint32_t adler32_avx512(uint32_t adler, const unsigned char *buf, siz
     __m512i vs2 = _mm512_maskz_set1_epi32(vs_mask, sum2);
 
     const __m512i dot1v = _mm512_set1_epi8(1);
-    /* No idea why there's no setr but I guess we'll deal with it */
-    const __m512i dot2v = _mm512_set_epi8(1, 2, 3, 4, 5, 6,
-                                          7, 8, 9, 10, 11, 12, 13,
-                                          14, 15, 16, 17, 18, 19,
-                                          20, 21, 22, 23, 24, 25,
-                                          26, 27, 28, 29, 30, 31,
-                                          32, 33, 34, 35, 36, 37,
-                                          38, 39, 40, 41, 42, 43,
-                                          44, 45, 46, 47, 48, 49,
-                                          50, 51, 52, 53, 54, 55,
-                                          56, 57, 58, 59, 60, 61,
-                                          62, 63, 64);
+    const __m512i dot2v = _mm512_set_epi8(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19,
+                                          20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37,
+                                          38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55,
+                                          56, 57, 58, 59, 60, 61, 62, 63, 64);
     const __m512i dot3v = _mm512_set1_epi16(1);
 
     while (len >= 64) {
@@ -80,28 +72,9 @@ Z_INTERNAL uint32_t adler32_avx512(uint32_t adler, const unsigned char *buf, siz
            vs1_0 = vs1;
        }
 
-        /* Will translate to nops */
-        __m256i s1lo = _mm512_castsi512_si256(vs1);
-        __m256i s2lo = _mm512_castsi512_si256(vs2);
-
-        /* Requires vextracti64x4 */
-        __m256i s1hi = _mm512_extracti64x4_epi64(vs1, 1);
-        __m256i s2hi = _mm512_extracti64x4_epi64(vs2, 1);
-        
-        /* Convert up to 64 bit precision to prevent overflow */
-        __m512i s1lo512 = _mm512_cvtepi32_epi64(s1lo);
-        __m512i s1hi512 = _mm512_cvtepi32_epi64(s1hi);
-        __m512i s2lo512 = _mm512_cvtepi32_epi64(s2lo);
-        __m512i s2hi512 = _mm512_cvtepi32_epi64(s2hi);
-
-        /* Sum vectors in existing lanes */
-        __m512i s1_sum = _mm512_add_epi64(s1lo512, s1hi512);
-        __m512i s2_sum = _mm512_add_epi64(s2lo512, s2hi512);
-        
-        adler = (uint32_t)(_mm512_reduce_add_epi64(s1_sum) % BASE);
-        sum2 = (uint32_t)(_mm512_reduce_add_epi64(s2_sum) % BASE);
-
+        adler = _mm512_reduce_add_epi32(vs1) % BASE;
         vs1 = _mm512_maskz_set1_epi32(vs_mask, adler);
+        sum2 = _mm512_reduce_add_epi32(vs2) % BASE;
         vs2 = _mm512_maskz_set1_epi32(vs_mask, sum2);
     }
 

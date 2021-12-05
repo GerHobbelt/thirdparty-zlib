@@ -72,6 +72,9 @@ extern uint32_t adler32_avx2(uint32_t adler, const unsigned char *buf, size_t le
 #ifdef X86_AVX512_ADLER32
 extern uint32_t adler32_avx512(uint32_t adler, const unsigned char *buf, size_t len);
 #endif
+#ifdef X86_AVX512VNNI_ADLER32
+extern uint32_t adler32_avx512_vnni(uint32_t adler, const unsigned char *buf, size_t len);
+#endif
 #ifdef POWER8_VSX_ADLER32
 extern uint32_t adler32_power8(uint32_t adler, const unsigned char* buf, size_t len);
 #endif
@@ -153,9 +156,6 @@ extern uint32_t compare258_unaligned_sse4(const unsigned char *src0, const unsig
 #if defined(X86_AVX2) && defined(HAVE_BUILTIN_CTZ)
 extern uint32_t compare258_unaligned_avx2(const unsigned char *src0, const unsigned char *src1);
 #endif
-#if defined(X86_AVX512) && defined(HAVE_BUILTIN_CTZ)
-extern uint32_t compare258_unaligned_avx512(const unsigned char *src0, const unsigned char *src1);
-#endif
 #endif
 
 /* longest_match */
@@ -171,9 +171,6 @@ extern uint32_t longest_match_unaligned_sse4(deflate_state *const s, Pos cur_mat
 #endif
 #if defined(X86_AVX2) && defined(HAVE_BUILTIN_CTZ)
 extern uint32_t longest_match_unaligned_avx2(deflate_state *const s, Pos cur_match);
-#endif
-#if defined(X86_AVX512) && defined(HAVE_BUILTIN_CTZ)
-extern uint32_t longest_match_unaligned_avx512(deflate_state *const s, Pos cur_match);
 #endif
 #endif
 
@@ -312,9 +309,14 @@ Z_INTERNAL uint32_t adler32_stub(uint32_t adler, const unsigned char *buf, size_
     if (x86_cpu_has_avx2)
         functable.adler32 = &adler32_avx2;
 #endif
-#ifdef X86_AVX2_ADLER32
+#ifdef X86_AVX512_ADLER32
     if (x86_cpu_has_avx512)
         functable.adler32 = &adler32_avx512;
+#endif
+#ifdef X86_AVX512VNNI_ADLER32
+    if (x86_cpu_has_avx512vnni) {
+        functable.adler32 = &adler32_avx512_vnni;
+    }
 #endif
 #ifdef PPC_VMX_ADLER32
     if (power_cpu_has_altivec)
@@ -571,10 +573,6 @@ Z_INTERNAL uint32_t compare258_stub(const unsigned char *src0, const unsigned ch
     if (x86_cpu_has_avx2)
         functable.compare258 = &compare258_unaligned_avx2;
 #  endif
-#  if defined(X86_AVX512) && defined(HAVE_BUILTIN_CTZ)
-    if (x86_cpu_has_avx512)
-        functable.compare258 = &compare258_unaligned_avx512;
-#  endif
 #endif
 
     return functable.compare258(src0, src1);
@@ -600,7 +598,7 @@ Z_INTERNAL uint32_t longest_match_stub(deflate_state *const s, Pos cur_match) {
     if (x86_cpu_has_avx2)
         functable.longest_match = &longest_match_unaligned_avx2;
 #  endif
-#  if defined(X86_AVX512) && defined(HAVE_BUILTIN_CTZ)
+#  if defined(X86_AVX512_COMPARE258) && defined(HAVE_BUILTIN_CTZLL)
     if (x86_cpu_has_avx512)
         functable.longest_match = &longest_match_unaligned_avx512;
 #  endif

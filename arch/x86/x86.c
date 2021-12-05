@@ -19,6 +19,7 @@
 
 Z_INTERNAL int x86_cpu_has_avx2;
 Z_INTERNAL int x86_cpu_has_avx512;
+Z_INTERNAL int x86_cpu_has_avx512vnni;
 Z_INTERNAL int x86_cpu_has_sse2;
 Z_INTERNAL int x86_cpu_has_ssse3;
 Z_INTERNAL int x86_cpu_has_sse42;
@@ -76,7 +77,8 @@ void Z_INTERNAL x86_check_features(void) {
         x86_cpu_has_avx2 = ebx & 0x20;
         /* Technically only avx512f needed, but if vnni is supported,
          * reduce_sum can produce better code, user just has to compile with march=native */
-        x86_cpu_has_avx512 = ebx & 0x00010000; 
+        x86_cpu_has_avx512 = ebx & 0x00010000;
+        x86_cpu_has_avx512vnni = ecx & 0x800;
     } else {
         x86_cpu_has_tzcnt = 0;
         x86_cpu_has_avx2 = 0;
