@@ -648,10 +648,9 @@ unsigned long Z_EXPORT PREFIX(deflateBound)(PREFIX3(stream) *strm, unsigned long
         return complen + wraplen;
 
 #ifndef NO_QUICK_STRATEGY
-    /* Quick deflate strategy worst case is 9 bits per literal, rounded to nearest byte,
-       plus the size of block headers & wrappers, and one extra byte for padding
-       extremely small blocks */
-    return sourceLen + ((sourceLen + 13 + 7) >> 3) + wraplen + 1;
+    /* Quick deflate strategy worst case is 9 bits per literal, rounded to nearest byte (+7 bits),
+       plus the size of deflate block headers and zlib/gzip wrapper */
+    return sourceLen + ((sourceLen + 7) >> 3) + ((DEFLATE_WRAPBITS + DEFLATE_PADBITS) >> 3) + wraplen;
 #else
     return sourceLen + (sourceLen >> 4) + 7 + wraplen;
 #endif
