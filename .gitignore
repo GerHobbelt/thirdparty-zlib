@@ -55,10 +55,8 @@ Testing
 /*.cmake
 *.stackdump
 *._h
-zconf.h
 zconf.h.cmakein
 zconf.h.included
-zconf-ng.h
 zconf-ng.h.cmakein
 ztest*
 
