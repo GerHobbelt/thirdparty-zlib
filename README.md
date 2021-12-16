@@ -21,11 +21,11 @@ Features
 * Modern C11 syntax and a clean code layout
 * Deflate medium and quick algorithms based on Intels zlib fork
 * Support for CPU intrinsics when available
-  * Adler32 implementation using SSSE3, AVX2, Neon, VMX & VSX
+  * Adler32 implementation using SSSE3, AVX2, AVX512, AVX512-VNNI, Neon, VMX & VSX
   * CRC32-B implementation using PCLMULQDQ & ACLE
   * Hash table implementation using CRC32-C intrinsics on x86 and ARM
   * Slide hash implementations using SSE2, AVX2, Neon, VMX & VSX
-  * Compare256/258 implementations using SSE4.2 & AVX2
+  * Compare256/258 implementations using SSE4.2, & AVX2
   * Inflate chunk copying using SSE2, AVX2, Neon & VSX
   * CRC32 implementation using IBM Z vector instructions
   * Support for hardware-accelerated deflate using IBM Z DFLTCC
@@ -196,6 +196,8 @@ Advanced Build Options
 | ZLIB_DUAL_LINK                  |                       | Dual link tests with system zlib                                    | OFF                    |
 | UNALIGNED_OK                    |                       | Allow unaligned reads                                               | ON (x86, arm)          |
 |                                 | --force-sse2          | Skip runtime check for SSE2 instructions (Always on for x86_64)     | OFF (x86)              |
+| WITH_AVX512                     |                       | Build with AVX512 intrinsics                                        | ON                     |
+| WITH_AVX512VNNI                 |                       | Build with AVX512VNNI intrinsics                                    | ON                     |
 | WITH_AVX2                       |                       | Build with AVX2 intrinsics                                          | ON                     |
 | WITH_SSE2                       |                       | Build with SSE2 intrinsics                                          | ON                     |
 | WITH_SSE4                       |                       | Build with SSE4 intrinsics                                          | ON                     |
