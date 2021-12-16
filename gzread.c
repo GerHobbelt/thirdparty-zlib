@@ -232,7 +232,7 @@ local int gz_fetch(
     z_streamp strm = &(state->strm);
 
     do {
-        switch(state->how) {
+        switch (state->how) {
         case LOOK:      /* -> LOOK, COPY (only if never GZIP), or GZIP */
             if (gz_look(state) == -1)
                 return -1;
@@ -416,6 +416,10 @@ z_size_t ZEXPORT gzfread(
 {
     z_size_t len;
     gz_statep state;
+
+    /* Exit early if size is zero, also prevents potential division by zero */
+    if (size == 0)
+        return 0;
 
     /* get internal structure */
     if (file == NULL)
