@@ -91,10 +91,10 @@ z_size_t Z_EXPORT PREFIX(compressBound)(z_size_t sourceLen) {
         return complen + ZLIB_WRAPLEN;
 
 #ifndef NO_QUICK_STRATEGY
-    /* Quick deflate strategy worse case is 9 bits per literal, rounded to nearest byte,
-       plus the size of block & gzip headers and footers */
-    return sourceLen + ((sourceLen + 13 + 7) >> 3) + 18;
+    /* Quick deflate strategy worst case is 9 bits per literal, rounded to nearest byte (+7 bits),
+       plus the size of deflate block headers and zlib wrapper */
+    return sourceLen + ((sourceLen + 7) >> 3) + ((DEFLATE_WRAPBITS + DEFLATE_PADBITS) >> 3) + ZLIB_WRAPLEN;
 #else
-    return sourceLen + (sourceLen >> 12) + (sourceLen >> 14) + (sourceLen >> 25) + 13;
+    return sourceLen + (sourceLen >> 4) + 7 + ZLIB_WRAPLEN;
 #endif
 }
