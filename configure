@@ -102,7 +102,9 @@ with_fuzzers=0
 floatabi=
 native=0
 forcesse2=0
-avx512flag="-mavx512f -mavx512dq -mavx512bw -mavx512vl"
+# For CPUs that can benefit from AVX512, it seems GCC generates suboptimal
+# instruction scheduling unless you specify a reasonable -mtune= target
+avx512flag="-mavx512f -mavx512dq -mavx512bw -mavx512vl -mtune=cascadelake"
 avx512vnniflag="-mavx512vnni ${avx512flag}"
 avx2flag="-mavx2"
 sse2flag="-msse2"
