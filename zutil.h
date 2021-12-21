@@ -82,8 +82,17 @@ extern z_const char * const PREFIX(z_errmsg)[10]; /* indexed by 2-zlib_error */
 
 #define ZLIB_WRAPLEN 6      /* zlib format overhead */
 #define GZIP_WRAPLEN 18     /* gzip format overhead */
-#define DEFLATE_WRAPBITS 13 /* deflate block overhead: 3 bits for block start + 10 bits for block end */
-#define DEFLATE_PADBITS 3   /* padding used to round deflate_wrapbits up to nearest byte */
+
+#define DEFLATE_HEADER_BITS 3
+#define DEFLATE_EOBS_BITS   15
+#define DEFLATE_PAD_BITS    6
+#define DEFLATE_BLOCK_OVERHEAD ((DEFLATE_HEADER_BITS + DEFLATE_EOBS_BITS + DEFLATE_PAD_BITS) >> 3)
+/* deflate block overhead: 3 bits for block start + 15 bits for block end + padding to nearest byte */
+
+#define DEFLATE_QUICK_LIT_MAX_BITS 9
+#define DEFLATE_QUICK_OVERHEAD(x) ((x * (DEFLATE_QUICK_LIT_MAX_BITS - 8) + 7) >> 3)
+/* deflate_quick worst-case overhead: 9 bits per literal, round up to next byte (+7) */
+
 
         /* target dependencies */
 
