@@ -303,7 +303,7 @@ macro(check_sse4_intrinsics)
         endif()
     elseif(CMAKE_C_COMPILER_ID MATCHES "GNU" OR CMAKE_C_COMPILER_ID MATCHES "Clang")
         if(NOT NATIVEFLAG)
-            set(SSE4FLAG "-msse4")
+            set(SSE4FLAG "-msse4.2")
         endif()
     endif()
     # Check whether compiler supports SSE4 CRC inline asm
@@ -312,7 +312,7 @@ macro(check_sse4_intrinsics)
         "int main(void) {
             unsigned val = 0, h = 0;
         #if defined(_MSC_VER)
-            { __asm mov edx, h __asm mov eax, val __asm crc32 eax, edx __asm mov val, eax }
+            { __asm mov edx, h __asm mov eax, val __asm crc32 eax, edx __asm mov h, eax }
         #else
             __asm__ __volatile__ ( \"crc32 %1,%0\" : \"+r\" (h) : \"r\" (val) );
         #endif

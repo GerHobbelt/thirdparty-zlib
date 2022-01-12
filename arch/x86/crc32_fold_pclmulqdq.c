@@ -24,6 +24,7 @@
 
 #include <immintrin.h>
 #include <wmmintrin.h>
+#include <smmintrin.h> // _mm_extract_epi32
 
 #include "../../crc32_fold.h"
 
