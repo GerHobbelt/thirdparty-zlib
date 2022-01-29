@@ -19,6 +19,20 @@
 
 #define local static
 
+/* old VC and older compilers don't support %td or %zu, and even some that
+   claim to be C99 don't support it */
+
+#if (defined(_MSC_VER) && (_MSC_VER < 1900)) || \
+    (!defined(_MSC_VER) && (!defined(__STDC_VERSION__) || __STDC_VERSION__ < 199901L))
+#ifdef _WIN64
+#define SIZE_T_FMT "llu"
+#else
+#define SIZE_T_FMT "lu"
+#endif
+#else
+#define SIZE_T_FMT "zu"
+#endif
+
 /* -- memory tracking routines -- */
 
 /*
@@ -185,7 +199,7 @@ local void mem_used(z_stream *strm, char *prefix)
 {
     struct mem_zone *zone = strm->opaque;
 
-    fprintf(stderr, "%s: %zu allocated\n", prefix, zone->total);
+    fprintf(stderr, "%s: %" SIZE_T_FMT " allocated\n", prefix, zone->total);
 }
 
 /* show the high water allocation in bytes */
@@ -193,7 +207,7 @@ local void mem_high(z_stream *strm, char *prefix)
 {
     struct mem_zone *zone = strm->opaque;
 
-    fprintf(stderr, "%s: %zu high water mark\n", prefix, zone->highwater);
+    fprintf(stderr, "%s: %" SIZE_T_FMT " high water mark\n", prefix, zone->highwater);
 }
 
 /* release the memory allocation zone -- if there are any surprises, notify */
@@ -218,7 +232,7 @@ local void mem_done(z_stream *strm, char *prefix)
 
     /* issue alerts about anything unexpected */
     if (count || zone->total)
-        fprintf(stderr, "** %s: %zu bytes in %d blocks not freed\n",
+        fprintf(stderr, "** %s: %" SIZE_T_FMT " bytes in %d blocks not freed\n",
                 prefix, zone->total, count);
     if (zone->notlifo)
         fprintf(stderr, "** %s: %d frees not LIFO\n", prefix, zone->notlifo);
