@@ -168,13 +168,15 @@ void ZLIB_INTERNAL inflate_fast(z_streamp strm, unsigned start) {
                 if (dist > op) {                /* see if copy from window */
                     op = dist - op;             /* distance back in window */
                     if (op > whave) {
+                    	if ( ! inflate_allow_distance_too_far_back ) {
                         if (state->sane) {
                             strm->msg = (z_const char *)
                                 "invalid distance too far back";
                             state->mode = BAD;
                             break;
                         }
-#ifdef INFLATE_ALLOW_INVALID_DISTANCE_TOOFAR_ARRR
+                        }
+                        else {
                         if (len <= op - whave) {
                             do {
                                 *out++ = 0;
@@ -192,7 +194,7 @@ void ZLIB_INTERNAL inflate_fast(z_streamp strm, unsigned start) {
                             } while (--len);
                             continue;
                         }
-#endif
+                        }
                     }
                     from = window;
                     if (wnext == 0) {           /* very common case */

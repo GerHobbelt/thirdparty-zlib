@@ -10,6 +10,8 @@
 #  include "gzguts.h"
 #endif
 
+__declspec(thread) int inflate_allow_distance_too_far_back = 0;
+
 z_const char * const z_errmsg[10] = {
     (z_const char *)"need dictionary",     /* Z_NEED_DICT       2  */
     (z_const char *)"stream end",          /* Z_STREAM_END      1  */
