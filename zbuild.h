@@ -86,12 +86,14 @@
 /* Ignore unused variable warning */
 #define Z_UNUSED(var) (void)(var)
 
+#ifndef Z_INTERNAL
 #if defined(HAVE_VISIBILITY_INTERNAL)
 #  define Z_INTERNAL __attribute__((visibility ("internal")))
 #elif defined(HAVE_VISIBILITY_HIDDEN)
 #  define Z_INTERNAL __attribute__((visibility ("hidden")))
 #else
 #  define Z_INTERNAL
+#endif
 #endif
 
 #ifndef __cplusplus
@@ -152,6 +154,14 @@
           ((q & 0x00000000000000FFu) << 56u))
 #endif
 
+/* nuke any previous definitions which may clash with the subsequent ones. This can happen when other libraries re-use this header file. */
+#undef LIKELY_NULL
+#undef LIKELY
+#undef UNLIKELY
+#undef PREFETCH_L1
+#undef PREFETCH_L2
+#undef PREFETCH_RW
+
 /* Only enable likely/unlikely if the compiler is known to support it */
 #if (defined(__GNUC__) && (__GNUC__ >= 3)) || defined(__INTEL_COMPILER) || defined(__Clang__)
 #  define LIKELY_NULL(x)        __builtin_expect((x) != 0, 0)
@@ -160,21 +170,45 @@
 #  define PREFETCH_L1(addr)     __builtin_prefetch(addr, 0, 3)
 #  define PREFETCH_L2(addr)     __builtin_prefetch(addr, 0, 2)
 #  define PREFETCH_RW(addr)     __builtin_prefetch(addr, 1, 2)
-#elif defined(__WIN__)
+#elif defined(__WIN__) || (defined(_MSC_VER) && (defined(_M_X64) || defined(_M_IX86_FP))  /* _mm_prefetch() is not defined outside of x86/x64 */ )
+#  include <mmintrin.h>   /* https://docs.microsoft.com/en-us/cpp/intrinsics/x64-amd64-intrinsics-list?view=msvc-170 */
+
+#if defined(__SSE__) || (_M_IX86_FP >= 1)
 #  include <xmmintrin.h>
-#  define LIKELY_NULL(x)        x
-#  define LIKELY(x)             x
-#  define UNLIKELY(x)           x
-#  define PREFETCH_L1(addr)     _mm_prefetch((char *) addr, _MM_HINT_T0)
-#  define PREFETCH_L2(addr)     _mm_prefetch((char *) addr, _MM_HINT_T1)
-#  define PREFETCH_RW(addr)     _mm_prefetch((char *) addr, _MM_HINT_T1)
+#endif
+#if defined(__SSE2__) || (_M_IX86_FP >= 2)
+#  include <emmintrin.h>
+#endif
+
+#if defined(__SSE2__) || (_M_IX86_FP >= 2)
+#  include <pmmintrin.h>     //SSE3
+#  include <tmmintrin.h>     //SSSE3
+#endif
+
+#if defined(__AVX__) || (_M_IX86_FP >= 2)
+#  include <immintrin.h>
+#endif
+
+#  define LIKELY_NULL(x)        (x)
+#  define LIKELY(x)             (x)
+#  define UNLIKELY(x)           (x)
+#  define PREFETCH_L1(addr)     _mm_prefetch((char *) (addr), _MM_HINT_T0)
+#  define PREFETCH_L2(addr)     _mm_prefetch((char *) (addr), _MM_HINT_T1)
+#  define PREFETCH_RW(addr)     _mm_prefetch((char *) (addr), _MM_HINT_T1)
+#elif defined(__aarch64__)
+#  define LIKELY_NULL(x)        (x)
+#  define LIKELY(x)             (x)
+#  define UNLIKELY(x)           (x)
+#  define PREFETCH_L1(ptr)  __asm__ __volatile__("prfm pldl1keep, %0" ::"Q"(*(ptr)))
+#  define PREFETCH_L2(ptr)  __asm__ __volatile__("prfm pldl2keep, %0" ::"Q"(*(ptr)))
+#  define PREFETCH_RW(addr)     (addr)
 #else
-#  define LIKELY_NULL(x)        x
-#  define LIKELY(x)             x
-#  define UNLIKELY(x)           x
-#  define PREFETCH_L1(addr)     addr
-#  define PREFETCH_L2(addr)     addr
-#  define PREFETCH_RW(addr)     addr
+#  define LIKELY_NULL(x)        (x)
+#  define LIKELY(x)             (x)
+#  define UNLIKELY(x)           (x)
+#  define PREFETCH_L1(addr)     (addr)
+#  define PREFETCH_L2(addr)     (addr)
+#  define PREFETCH_RW(addr)     (addr)
 #endif /* (un)likely */
 
 #if defined(__clang__) || defined(__GNUC__)
