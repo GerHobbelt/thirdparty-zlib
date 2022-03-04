@@ -199,6 +199,8 @@ Advanced Build Options
 | WITH_AVX512                     |                       | Build with AVX512 intrinsics                                        | ON                     |
 | WITH_AVX512VNNI                 |                       | Build with AVX512VNNI intrinsics                                    | ON                     |
 | WITH_AVX2                       |                       | Build with AVX2 intrinsics                                          | ON                     |
+| WITH_AVX512                     |                       | Build with AVX512 intrinsics                                        | ON                     |
+| WITH_AVX512VNNI                 |                       | Build with AVX512VNNI intrinsics                                    | ON                     |
 | WITH_SSE2                       |                       | Build with SSE2 intrinsics                                          | ON                     |
 | WITH_SSE4                       |                       | Build with SSE4 intrinsics                                          | ON                     |
 | WITH_PCLMULQDQ                  |                       | Build with PCLMULQDQ intrinsics                                     | ON                     |

@@ -29,14 +29,9 @@
 #  define HASH_CALC_MASK HASH_MASK
 #endif
 #ifndef HASH_CALC_READ
-#  if BYTE_ORDER == LITTLE_ENDIAN
-#   if UNALIGNED_OK && defined(__GNUC__) && !defined(__clang__) && __GNUC__ < 8
+#  ifdef UNALIGNED_OK
 #    define HASH_CALC_READ \
-        val = *(uint32_t *)(strstart);
-#   else
-#    define HASH_CALC_READ \
-        memcpy(&val, strstart, 4);
-#   endif
+        memcpy(&val, strstart, sizeof(val));
 #  else
 #    define HASH_CALC_READ \
         val  = ((uint32_t)(strstart[0])); \

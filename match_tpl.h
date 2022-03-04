@@ -85,15 +85,9 @@ Z_INTERNAL uint32_t LONGEST_MATCH(deflate_state *const s, Pos cur_match) {
     }
 #endif
 
-#if defined(__GNUC__) && !defined(__clang__) && __GNUC__ < 8
-    scan_end   = *(bestcmp_t *)(scan+offset);
-#else
     memcpy(&scan_end, scan+offset, sizeof(bestcmp_t));
-#endif
 #ifndef UNALIGNED_OK
-    scan_end0  = *(bestcmp_t *)(scan+offset+1);
-#elif defined(__GNUC__) && !defined(__clang__) && __GNUC__ < 8
-    scan_start = *(bestcmp_t *)(scan);
+    memcpy(&scan_end0, scan+offset+1, sizeof(bestcmp_t));
 #else
     memcpy(&scan_start, scan, sizeof(bestcmp_t));
 #endif
@@ -228,13 +222,9 @@ Z_INTERNAL uint32_t LONGEST_MATCH(deflate_state *const s, Pos cur_match) {
 #endif
             }
 #endif
-#if defined(__GNUC__) && !defined(__clang__) && __GNUC__ < 8
-            scan_end = *(bestcmp_t *)(scan+offset);
-#else
             memcpy(&scan_end, scan+offset, sizeof(bestcmp_t));
-#endif
 #ifndef UNALIGNED_OK
-            scan_end0 = *(bestcmp_t *)(scan+offset+1);
+            memcpy(&scan_end0, scan+offset+1, sizeof(bestcmp_t));
 #endif
 #ifdef LONGEST_MATCH_SLOW
             /* Look for a better string offset */

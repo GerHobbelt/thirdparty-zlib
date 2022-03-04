@@ -302,17 +302,11 @@ typedef enum {
  * IN assertion: there is enough room in pending_buf.
  */
 static inline void put_short(deflate_state *s, uint16_t w) {
-#if BYTE_ORDER == LITTLE_ENDIAN
-#if defined(UNALIGNED_OK) && defined(__GNUC__) && !defined(__clang__) && __GNUC__ < 8
-    *(uint16_t *)(&s->pending_buf[s->pending]) = w;
-#else
-    memcpy(&s->pending_buf[s->pending], &w, 2);
+#if BYTE_ORDER == BIG_ENDIAN
+    w = ZSWAP16(w);
 #endif
+    memcpy(&s->pending_buf[s->pending], &w, sizeof(w));
     s->pending += 2;
-#else
-    put_byte(s, (w & 0xff));
-    put_byte(s, ((w >> 8) & 0xff));
-#endif
 }
 
 /* ===========================================================================
@@ -320,8 +314,11 @@ static inline void put_short(deflate_state *s, uint16_t w) {
  * IN assertion: there is enough room in pending_buf.
  */
 static inline void put_short_msb(deflate_state *s, uint16_t w) {
-    put_byte(s, ((w >> 8) & 0xff));
-    put_byte(s, (w & 0xff));
+#if BYTE_ORDER == LITTLE_ENDIAN
+    w = ZSWAP16(w);
+#endif
+    memcpy(&s->pending_buf[s->pending], &w, sizeof(w));
+    s->pending += 2;
 }
 
 /* ===========================================================================
@@ -329,19 +326,11 @@ static inline void put_short_msb(deflate_state *s, uint16_t w) {
  * IN assertion: there is enough room in pending_buf.
  */
 static inline void put_uint32(deflate_state *s, uint32_t dw) {
-#if BYTE_ORDER == LITTLE_ENDIAN
-#if defined(UNALIGNED_OK) && defined(__GNUC__) && !defined(__clang__) && __GNUC__ < 8
-    *(uint32_t *)(&s->pending_buf[s->pending]) = dw;
-#else
-    memcpy(&s->pending_buf[s->pending], &dw, 4);
+#if BYTE_ORDER == BIG_ENDIAN
+    dw = ZSWAP32(dw);
 #endif
+    memcpy(&s->pending_buf[s->pending], &dw, sizeof(dw));
     s->pending += 4;
-#else
-    put_byte(s, (dw & 0xff));
-    put_byte(s, ((dw >> 8) & 0xff));
-    put_byte(s, ((dw >> 16) & 0xff));
-    put_byte(s, ((dw >> 24) & 0xff));
-#endif
 }
 
 /* ===========================================================================
@@ -350,26 +339,10 @@ static inline void put_uint32(deflate_state *s, uint32_t dw) {
  */
 static inline void put_uint32_msb(deflate_state *s, uint32_t dw) {
 #if BYTE_ORDER == LITTLE_ENDIAN
-#if defined(UNALIGNED_OK) && defined(__GNUC__) && !defined(__clang__) && __GNUC__ < 8
-    *(uint32_t *)(&s->pending_buf[s->pending]) = ZSWAP32(dw);
-#else
-    uint32_t msb = ZSWAP32(dw);
-    memcpy(&s->pending_buf[s->pending], &msb, 4);
+    dw = ZSWAP32(dw);
+#endif
+    memcpy(&s->pending_buf[s->pending], &dw, sizeof(dw));
     s->pending += 4;
-#endif
-#elif BYTE_ORDER == BIG_ENDIAN
-#if defined(__GNUC__) && !defined(__clang__) && __GNUC__ < 8
-    put_byte(s, ((dw >> 24) & 0xff));
-    put_byte(s, ((dw >> 16) & 0xff));
-    put_byte(s, ((dw >> 8) & 0xff));
-    put_byte(s, (dw & 0xff));
-#else
-    memcpy(&s->pending_buf[s->pending], &dw, 4);
-    s->pending += 4;
-#endif
-#else
-#  error No endian defined
-#endif
 }
 
 /* ===========================================================================
@@ -377,26 +350,11 @@ static inline void put_uint32_msb(deflate_state *s, uint32_t dw) {
  * IN assertion: there is enough room in pending_buf.
  */
 static inline void put_uint64(deflate_state *s, uint64_t lld) {
-#if BYTE_ORDER == LITTLE_ENDIAN
-#if defined(UNALIGNED64_OK) && defined(__GNUC__) && !defined(__clang__) && __GNUC__ < 8
-    *(uint64_t *)(&s->pending_buf[s->pending]) = lld;
-#elif defined(UNALIGNED_OK) && defined(__GNUC__) && !defined(__clang__) && __GNUC__ < 8
-    *(uint32_t *)(&s->pending_buf[s->pending]) = lld & 0xffffffff;
-    *(uint32_t *)(&s->pending_buf[s->pending+4]) = (lld >> 32) & 0xffffffff;
-#else
-    memcpy(&s->pending_buf[s->pending], &lld, 8);
+#if BYTE_ORDER == BIG_ENDIAN
+    lld = ZSWAP64(lld);
 #endif
+    memcpy(&s->pending_buf[s->pending], &lld, sizeof(lld));
     s->pending += 8;
-#else
-    put_byte(s, (lld & 0xff));
-    put_byte(s, ((lld >> 8) & 0xff));
-    put_byte(s, ((lld >> 16) & 0xff));
-    put_byte(s, ((lld >> 24) & 0xff));
-    put_byte(s, ((lld >> 32) & 0xff));
-    put_byte(s, ((lld >> 40) & 0xff));
-    put_byte(s, ((lld >> 48) & 0xff));
-    put_byte(s, ((lld >> 56) & 0xff));
-#endif
 }
 
 #define MIN_LOOKAHEAD (STD_MAX_MATCH + STD_MIN_MATCH + 1)

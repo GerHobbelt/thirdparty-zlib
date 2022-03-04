@@ -16,6 +16,28 @@
 
 #ifdef X86_AVX512VNNI_ADLER32
 
+static inline uint32_t partial_hsum(__m512i x)
+{
+    /* We need a permutation vector to extract every other integer. The
+     * rest are going to be zeros. Marking this const so the compiler stands
+     * a better chance of keeping this resident in a register through entire 
+     * loop execution. We certainly have enough zmm registers (32) */
+    const __m512i perm_vec = _mm512_setr_epi32(0, 2, 4, 6, 8, 10, 12, 14,
+                                               1, 1, 1, 1, 1,  1,  1,  1);
+    __m512i non_zero = _mm512_permutexvar_epi32(perm_vec, x);
+
+    /* From here, it's a simple 256 bit wide reduction sum */
+    __m256i non_zero_avx = _mm512_castsi512_si256(non_zero);
+    
+    /* See Agner Fog's vectorclass for a decent reference. Essentially, phadd is
+     * pretty slow, much slower than the longer instruction sequence below */
+    __m128i sum1  = _mm_add_epi32(_mm256_extracti128_si256(non_zero_avx, 1),
+                                  _mm256_castsi256_si128(non_zero_avx));
+    __m128i sum2  = _mm_add_epi32(sum1,_mm_unpackhi_epi64(sum1, sum1));
+    __m128i sum3  = _mm_add_epi32(sum2,_mm_shuffle_epi32(sum2, 1));
+    return (uint32_t)_mm_cvtsi128_si32(sum3);
+}
+
 Z_INTERNAL uint32_t adler32_avx512_vnni(uint32_t adler, const unsigned char *buf, size_t len) {
     uint32_t sum2;
 
@@ -36,7 +58,12 @@ Z_INTERNAL uint32_t adler32_avx512_vnni(uint32_t adler, const unsigned char *buf
         return adler32_len_16(adler, buf, len, sum2);
 
     const __mmask16 vs_mask = 1U << 15;
-    __m512i vs1 = _mm512_maskz_set1_epi32(vs_mask, adler);
+    /* We want to place initial adler sum at vector position 0, as it is one of the lanes that line up
+     * with the sum of absolute differences' reduction sum. If we do this, we can get away with a partial,
+     * less expensive horizontal sum for the vs1 component at the end. It also happens to be marginally better
+     * (by a single cycle) to do this with the ancient vmovd insruction, and simply allow the register to be
+     * aliased up to a 512 bit wide zmm */
+    __m512i vs1 = _mm512_castsi128_si512(_mm_cvtsi32_si128(adler));
     __m512i vs2 = _mm512_maskz_set1_epi32(vs_mask, sum2);
 
     const __m512i dot2v = _mm512_set_epi8(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19,
@@ -95,8 +122,8 @@ Z_INTERNAL uint32_t adler32_avx512_vnni(uint32_t adler, const unsigned char *buf
         vs3 = _mm512_slli_epi32(vs3, 6);
         vs2 = _mm512_add_epi32(vs2, vs3);
 
-        adler = _mm512_reduce_add_epi32(vs1) % BASE;
-        vs1 = _mm512_maskz_set1_epi32(vs_mask, adler);
+        adler = partial_hsum(vs1) % BASE;
+        vs1 = _mm512_castsi128_si512(_mm_cvtsi32_si128(adler));
         sum2 = _mm512_reduce_add_epi32(vs2) % BASE;
         vs2 = _mm512_maskz_set1_epi32(vs_mask, sum2);
     }

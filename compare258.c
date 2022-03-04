@@ -143,16 +143,12 @@ static inline uint32_t compare256_unaligned_32_static(const unsigned char *src0,
     uint32_t len = 0;
 
     do {
-#if defined(__GNUC__) && !defined(__clang__) && __GNUC__ < 8
-        uint32_t sv = *(uint32_t *)src0;
-        uint32_t mv = *(uint32_t *)src1;
-#else
-        uint32_t sv, mv;
-        memcpy(&sv, src0, 4);
-        memcpy(&mv, src1, 4);
-#endif
-        uint32_t diff = sv ^ mv;
+        uint32_t sv, mv, diff;
 
+        memcpy(&sv, src0, sizeof(sv));
+        memcpy(&mv, src1, sizeof(mv));
+
+        diff = sv ^ mv;
         if (diff) {
             uint32_t match_byte = __builtin_ctz(diff) / 8;
             return len + match_byte;
@@ -200,16 +196,12 @@ static inline uint32_t compare256_unaligned_64_static(const unsigned char *src0,
     uint32_t len = 0;
 
     do {
-#if defined(__GNUC__) && !defined(__clang__) && __GNUC__ < 8
-        uint64_t sv = *(uint64_t *)src0;
-        uint64_t mv = *(uint64_t *)src1;
-#else
-        uint64_t sv, mv;
-        memcpy(&sv, src0, 8);
-        memcpy(&mv, src1, 8);
-#endif
-        uint64_t diff = sv ^ mv;
+        uint64_t sv, mv, diff;
 
+        memcpy(&sv, src0, sizeof(sv));
+        memcpy(&mv, src1, sizeof(mv));
+
+        diff = sv ^ mv;
         if (diff) {
             uint64_t match_byte = __builtin_ctzll(diff) / 8;
             return len + (uint32_t)match_byte;

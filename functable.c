@@ -137,8 +137,7 @@ Z_INTERNAL uint32_t crc32_generic(uint32_t, const unsigned char *, uint64_t);
 extern uint32_t crc32_acle(uint32_t, const unsigned char *, uint64_t);
 #elif defined(POWER8_VSX_CRC32)
 extern uint32_t crc32_power8(uint32_t, const unsigned char *, uint64_t);
-#endif
-#ifdef S390_CRC32_VX
+#elif defined(S390_CRC32_VX)
 extern uint32_t s390_crc32_vx(uint32_t, const unsigned char *, uint64_t);
 #endif
 
@@ -312,11 +311,11 @@ Z_INTERNAL uint32_t adler32_stub(uint32_t adler, const unsigned char *buf, size_
         functable.adler32 = &adler32_avx2;
 #endif
 #ifdef X86_AVX512_ADLER32
-    if (x86_cpu_has_avx512)
+    if (x86_cpu_has_avx512 && x86_cpu_well_suited_avx512)
         functable.adler32 = &adler32_avx512;
 #endif
 #ifdef X86_AVX512VNNI_ADLER32
-    if (x86_cpu_has_avx512vnni) {
+    if (x86_cpu_has_avx512vnni && x86_cpu_well_suited_avx512) {
         functable.adler32 = &adler32_avx512_vnni;
     }
 #endif
@@ -333,31 +332,31 @@ Z_INTERNAL uint32_t adler32_stub(uint32_t adler, const unsigned char *buf, size_
 }
 
 Z_INTERNAL uint32_t crc32_fold_reset_stub(crc32_fold *crc) {
-    functable.crc32_fold_reset = crc32_fold_reset_c;
+    functable.crc32_fold_reset = &crc32_fold_reset_c;
     cpu_check_features();
 #ifdef X86_PCLMULQDQ_CRC
     if (x86_cpu_has_pclmulqdq)
-        functable.crc32_fold_reset = crc32_fold_reset_pclmulqdq;
+        functable.crc32_fold_reset = &crc32_fold_reset_pclmulqdq;
 #endif
     return functable.crc32_fold_reset(crc);
 }
 
 Z_INTERNAL void crc32_fold_copy_stub(crc32_fold *crc, uint8_t *dst, const uint8_t *src, size_t len) {
-    functable.crc32_fold_copy = crc32_fold_copy_c;
+    functable.crc32_fold_copy = &crc32_fold_copy_c;
     cpu_check_features();
 #ifdef X86_PCLMULQDQ_CRC
     if (x86_cpu_has_pclmulqdq)
-        functable.crc32_fold_copy = crc32_fold_copy_pclmulqdq;
+        functable.crc32_fold_copy = &crc32_fold_copy_pclmulqdq;
 #endif
     functable.crc32_fold_copy(crc, dst, src, len);
 }
 
 Z_INTERNAL uint32_t crc32_fold_final_stub(crc32_fold *crc) {
-    functable.crc32_fold_final = crc32_fold_final_c;
+    functable.crc32_fold_final = &crc32_fold_final_c;
     cpu_check_features();
 #ifdef X86_PCLMULQDQ_CRC
     if (x86_cpu_has_pclmulqdq)
-        functable.crc32_fold_final = crc32_fold_final_pclmulqdq;
+        functable.crc32_fold_final = &crc32_fold_final_pclmulqdq;
 #endif
     return functable.crc32_fold_final(crc);
 }
@@ -526,35 +525,29 @@ Z_INTERNAL uint8_t* chunkmemset_safe_stub(uint8_t *out, unsigned dist, unsigned 
 }
 
 Z_INTERNAL uint32_t crc32_stub(uint32_t crc, const unsigned char *buf, uint64_t len) {
-    int32_t use_byfour = sizeof(void *) == sizeof(ptrdiff_t);
-
     Assert(sizeof(uint64_t) >= sizeof(size_t),
            "crc32_z takes size_t but internally we have a uint64_t len");
-    /* return a function pointer for optimized arches here after a capability test */
 
     functable.crc32 = &crc32_generic;
     cpu_check_features();
 
-    if (use_byfour) {
 #if BYTE_ORDER == LITTLE_ENDIAN
-        functable.crc32 = crc32_little;
-#  if defined(ARM_ACLE_CRC_HASH)
-        if (arm_cpu_has_crc32)
-            functable.crc32 = crc32_acle;
-#  endif
+    functable.crc32 = &crc32_little;
 #elif BYTE_ORDER == BIG_ENDIAN
-        functable.crc32 = crc32_big;
-#  if defined(S390_CRC32_VX)
-        if (s390_cpu_has_vx)
-            functable.crc32 = s390_crc32_vx;
-#  endif
+    functable.crc32 = &crc32_big;
 #else
-#  error No endian defined
+    functable.crc32 = &crc32_generic;
 #endif
-    }
-#if defined(POWER8_VSX_CRC32)
+    cpu_check_features();
+#ifdef ARM_ACLE_CRC_HASH
+    if (arm_cpu_has_crc32)
+        functable.crc32 = &crc32_acle;
+#elif defined(POWER8_VSX_CRC32)
     if (power_cpu_has_arch_2_07)
-        functable.crc32 = crc32_power8;
+        functable.crc32 = &crc32_power8;
+#elif defined(S390_CRC32_VX)
+    if (s390_cpu_has_vx)
+        functable.crc32 = &s390_crc32_vx;
 #endif
 
     return functable.crc32(crc, buf, len);

@@ -5,10 +5,10 @@
 #include "zbuild.h"
 #include "zutil.h"
 
-// We need sizeof(chunk_t) to be 8, no matter what.
-#if defined(UNALIGNED64_OK) && defined(__GNUC__) && !defined(__clang__) && __GNUC__ < 8
+/* Define 8 byte chunks differently depending on unaligned support */
+#if defined(UNALIGNED64_OK)
 typedef uint64_t chunk_t;
-#elif defined(UNALIGNED_OK) && defined(__GNUC__) && !defined(__clang__) && __GNUC__ < 8
+#elif defined(UNALIGNED_OK)
 typedef struct chunk_t { uint32_t u32[2]; } chunk_t;
 #else
 typedef struct chunk_t { uint8_t u8[8]; } chunk_t;
@@ -21,9 +21,9 @@ typedef struct chunk_t { uint8_t u8[8]; } chunk_t;
 #define HAVE_CHUNKMEMSET_8
 
 static inline void chunkmemset_1(uint8_t *from, chunk_t *chunk) {
-#if defined(UNALIGNED64_OK) && defined(__GNUC__) && !defined(__clang__) && __GNUC__ < 8
+#if defined(UNALIGNED64_OK)
     *chunk = 0x0101010101010101 * (uint8_t)*from;
-#elif defined(UNALIGNED_OK) && defined(__GNUC__) && !defined(__clang__) && __GNUC__ < 8
+#elif defined(UNALIGNED_OK)
     chunk->u32[0] = 0x01010101 * (uint8_t)*from;
     chunk->u32[1] = chunk->u32[0];
 #else
@@ -32,29 +32,26 @@ static inline void chunkmemset_1(uint8_t *from, chunk_t *chunk) {
 }
 
 static inline void chunkmemset_4(uint8_t *from, chunk_t *chunk) {
-#if defined(UNALIGNED64_OK) && defined(__GNUC__) && !defined(__clang__) && __GNUC__ < 8
+#if defined(UNALIGNED64_OK)
     uint32_t half_chunk;
-    half_chunk = *(uint32_t *)from;
+    memcpy(&half_chunk, from, sizeof(half_chunk));
     *chunk = 0x0000000100000001 * (uint64_t)half_chunk;
-#elif defined(UNALIGNED_OK) && defined(__GNUC__) && !defined(__clang__) && __GNUC__ < 8
-    chunk->u32[0] = *(uint32_t *)from;
+#elif defined(UNALIGNED_OK)
+    memcpy(&chunk->u32[0], from, sizeof(chunk->u32[0]));
     chunk->u32[1] = chunk->u32[0];
 #else
     uint8_t *chunkptr = (uint8_t *)chunk;
-    memcpy(chunkptr, from, 4);
-    memcpy(chunkptr+4, from, 4);
+    memcpy(chunkptr, from, sizeof(uint32_t));
+    memcpy(chunkptr+4, from, sizeof(uint32_t));
 #endif
 }
 
 static inline void chunkmemset_8(uint8_t *from, chunk_t *chunk) {
-#if defined(UNALIGNED64_OK) && defined(__GNUC__) && !defined(__clang__) && __GNUC__ < 8
-    *chunk = *(uint64_t *)from;
-#elif defined(UNALIGNED_OK) && defined(__GNUC__) && !defined(__clang__) && __GNUC__ < 8
-    uint32_t* p = (uint32_t *)from;
-    chunk->u32[0] = p[0];
-    chunk->u32[1] = p[1];
+#if defined(UNALIGNED_OK) && !defined(UNALIGNED64_OK)
+    memcpy(&chunk->u32[0], from, sizeof(chunk->u32[0]));
+    memcpy(&chunk->u32[1], from+4, sizeof(chunk->u32[1]));
 #else
-    memcpy(chunk, from, sizeof(chunk_t));
+    memcpy(chunk, from, sizeof(uint64_t));
 #endif
 }
 
@@ -63,14 +60,7 @@ static inline void loadchunk(uint8_t const *s, chunk_t *chunk) {
 }
 
 static inline void storechunk(uint8_t *out, chunk_t *chunk) {
-#if defined(UNALIGNED64_OK) && defined(__GNUC__) && !defined(__clang__) && __GNUC__ < 8
-    *(uint64_t *)out = *chunk;
-#elif defined(UNALIGNED_OK) && defined(__GNUC__) && !defined(__clang__) && __GNUC__ < 8
-    ((uint32_t *)out)[0] = chunk->u32[0];
-    ((uint32_t *)out)[1] = chunk->u32[1];
-#else
-    memcpy(out, chunk, sizeof(chunk_t));
-#endif
+    memcpy(out, chunk, sizeof(uint64_t));
 }
 
 #define CHUNKSIZE        chunksize_c

@@ -16,6 +16,7 @@ extern int x86_cpu_has_ssse3;
 extern int x86_cpu_has_sse42;
 extern int x86_cpu_has_pclmulqdq;
 extern int x86_cpu_has_tzcnt;
+extern int x86_cpu_well_suited_avx512;
 
 void Z_INTERNAL x86_check_features(void);
 
