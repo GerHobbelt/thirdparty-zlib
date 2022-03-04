@@ -72,8 +72,8 @@ BENCHMARK_COMPARE256(unaligned_64, compare256_unaligned_64, 1);
 #endif
 #endif
 
-#ifdef X86_SSE42_CMP_STR
-BENCHMARK_COMPARE256(unaligned_sse4, compare256_unaligned_sse4, x86_cpu_has_sse42);
+#ifdef X86_SSE2
+BENCHMARK_COMPARE256(unaligned_sse2, compare256_unaligned_sse2, x86_cpu_has_sse2);
 #endif
 #if defined(X86_AVX2) && defined(HAVE_BUILTIN_CTZ)
 BENCHMARK_COMPARE256(unaligned_avx2, compare256_unaligned_avx2, x86_cpu_has_avx2);
