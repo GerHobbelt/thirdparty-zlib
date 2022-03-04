@@ -11,6 +11,7 @@
 #include "inflate_p.h"
 #include "inffixed_tbl.h"
 #include "functable.h"
+#include "zutil.h"      // cpu_check_features()
 
 /* function prototypes */
 static int inflateStateCheck(PREFIX3(stream) *strm);
@@ -103,6 +104,8 @@ int32_t Z_EXPORT PREFIX(inflateReset2)(PREFIX3(stream) *strm, int32_t windowBits
 int32_t Z_EXPORT PREFIX(inflateInit2_)(PREFIX3(stream) *strm, int32_t windowBits, const char *version, int32_t stream_size) {
     int32_t ret;
     struct inflate_state *state;
+
+    cpu_check_features();
 
     if (version == NULL || version[0] != PREFIX2(VERSION)[0] || stream_size != (int)(sizeof(PREFIX3(stream))))
         return Z_VERSION_ERROR;

@@ -51,6 +51,7 @@
 #include "deflate.h"
 #include "deflate_p.h"
 #include "functable.h"
+#include "zutil.h"      // cpu_check_features()
 
 const char PREFIX(deflate_copyright)[] = " deflate 1.2.11.f Copyright 1995-2016 Jean-loup Gailly and Mark Adler ";
 /*
@@ -192,6 +193,8 @@ int32_t Z_EXPORT PREFIX(deflateInit2_)(PREFIX3(stream) *strm, int32_t level, int
     deflate_state *s;
     int wrap = 1;
     static const char my_version[] = PREFIX2(VERSION);
+
+    cpu_check_features();
 
     if (version == NULL || version[0] != my_version[0] || stream_size != sizeof(PREFIX3(stream))) {
         return Z_VERSION_ERROR;

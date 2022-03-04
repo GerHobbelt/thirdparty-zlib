@@ -8,8 +8,8 @@
 #include "crc32_p.h"
 #include "deflate.h"
 #include "deflate_p.h"
-
 #include "functable.h"
+#include "zutil.h"      // cpu_check_features()
 
 #ifdef X86_FEATURES
 #  include "fallback_builtins.h"
