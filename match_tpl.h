@@ -303,4 +303,3 @@ break_matching:
 #undef LONGEST_MATCH_SLOW
 #undef LONGEST_MATCH
 #undef COMPARE256
-#undef COMPARE258
