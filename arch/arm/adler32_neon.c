@@ -5,7 +5,7 @@
  * For conditions of distribution and use, see copyright notice in zlib.h
  */
 
-#include "../../zutil.h"
+#include "../../zbuild.h"
 
 #ifdef ARM_NEON_ADLER32
 #ifdef _M_ARM64
@@ -13,7 +13,6 @@
 #else
 #  include <arm_neon.h>
 #endif
-
 #include "../../adler32_p.h"
 
 static void NEON_accum32(uint32_t *s, const unsigned char *buf, size_t len) {

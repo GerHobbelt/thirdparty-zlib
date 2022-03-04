@@ -313,7 +313,6 @@ jobs:
             packages:  ninja-build llvm-11-tools
             gcov-exec: llvm-cov-11 gcov
             cflags: -g3 -fno-omit-frame-pointer -fno-optimize-sibling-calls -fsanitize-memory-track-origins
-            codecov: ubuntu_clang_msan
 
           - name: Windows MSVC Win32
             os: windows-latest
@@ -374,11 +373,15 @@ jobs:
         repository: zlib-ng/corpora
         path: test/data/corpora
 
+    - name: Add repositories (Wine)
+      if: contains(matrix.packages, 'wine')
+      run: |
+        sudo dpkg --add-architecture i386
+        sudo apt-add-repository ppa:ondrej/php -y
+
     - name: Install packages (Ubuntu)
       if: runner.os == 'Linux' && matrix.packages
       run: |
-        sudo dpkg --add-architecture i386 # Required for wine32
-        sudo apt-add-repository ppa:ondrej/php -y
         sudo apt-get update
         sudo apt-get install -y ${{ matrix.packages }}
 
@@ -394,11 +397,6 @@ jobs:
       env:
         HOMEBREW_NO_INSTALL_CLEANUP: 1
 
-    - name: Install codecov.io tools
-      if: matrix.codecov
-      run: |
-        python -u -m pip install --user codecov
-
     - name: Initialize Wine
       # Prevent parallel test jobs from initializing Wine at the same time
       if: contains(matrix.packages, 'wine')
@@ -410,7 +408,7 @@ jobs:
       run: |
         mkdir ${{ matrix.build-dir || '.not-used' }}
         cd ${{ matrix.build-dir || '.' }}
-        cmake ${{ matrix.build-src-dir || '.' }} ${{ matrix.cmake-args }} -DCMAKE_BUILD_TYPE=${{ matrix.build-config || 'Release' }} -DBUILD_SHARED_LIBS=OFF -DWITH_FUZZERS=ON -DWITH_CODE_COVERAGE=ON -DWITH_MAINTAINER_WARNINGS=ON
+        cmake ${{ matrix.build-src-dir || '.' }} ${{ matrix.cmake-args }} -DCMAKE_BUILD_TYPE=${{ matrix.build-config || 'Release' }} -DBUILD_SHARED_LIBS=OFF -DWITH_FUZZERS=ON ${{ matrix.codecov && '-DWITH_CODE_COVERAGE=ON' }} -DWITH_MAINTAINER_WARNINGS=ON
       env:
         CC: ${{ matrix.compiler }}
         CFLAGS: ${{ matrix.cflags }}
@@ -438,6 +436,7 @@ jobs:
       if: matrix.codecov && ( env.CODECOV_TOKEN_SECRET != '' || github.repository == 'zlib-ng/zlib-ng' )
       shell: bash
       run: |
+        python -u -m pip install --user codecov
         bash tools/codecov-upload.sh
       env:
         # Codecov does not yet support GitHub Actions

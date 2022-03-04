@@ -1,7 +1,5 @@
-#ifndef S390_H_
-#define S390_H_
-
-#include "zutil.h"
+#ifndef S390_FEATURES_H_
+#define S390_FEATURES_H_
 
 extern int s390_cpu_has_vx;
 

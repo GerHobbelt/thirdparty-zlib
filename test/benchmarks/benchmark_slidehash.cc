@@ -3,19 +3,17 @@
  * For conditions of distribution and use, see copyright notice in zlib.h
  */
 
-#include <stdint.h>
-#include <stdint.h>
 #include <limits.h>
+
+#include <benchmark/benchmark.h>
 
 extern "C" {
 #  include "zbuild.h"
 #  include "zutil.h"
 #  include "zutil_p.h"
-#  include "cpu_features.h"
 #  include "deflate.h"
+#  include "cpu_features.h"
 }
-
-#include <benchmark/benchmark.h>
 
 #define MAX_RANDOM_INTS 32768
 

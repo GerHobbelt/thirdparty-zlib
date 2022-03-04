@@ -37,7 +37,6 @@
  */
 
 #include "zbuild.h"
-#include "zutil.h"
 
 #ifdef POWER8_VSX_ADLER32
 

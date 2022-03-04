@@ -20,13 +20,11 @@
 
 #ifdef X86_PCLMULQDQ_CRC
 
-#include <stdint.h>
-
 #include <immintrin.h>
 #include <wmmintrin.h>
 #include <smmintrin.h> // _mm_extract_epi32
 
-#include "x86.h"
+#include "x86_features.h"
 
 #include "../../crc32_fold.h"
 

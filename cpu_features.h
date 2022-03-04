@@ -3,21 +3,20 @@
  * For conditions of distribution and use, see copyright notice in zlib.h
  */
 
-#ifndef CPU_FEATURES
-#define CPU_FEATURES
+#ifndef CPU_FEATURES_H_
+#define CPU_FEATURES_H_
 
-#include "deflate.h"
 #include "crc32_fold.h"
 
 #if defined(X86_FEATURES)
-#  include "arch/x86/x86.h"
+#  include "arch/x86/x86_features.h"
 #  include "fallback_builtins.h"
 #elif defined(ARM_FEATURES)
-#  include "arch/arm/arm.h"
+#  include "arch/arm/arm_features.h"
 #elif defined(PPC_FEATURES) || defined(POWER_FEATURES)
-#  include "arch/power/power.h"
+#  include "arch/power/power_features.h"
 #elif defined(S390_FEATURES)
-#  include "arch/s390/s390.h"
+#  include "arch/s390/s390_features.h"
 #endif
 
 extern void cpu_check_features();
@@ -128,6 +127,7 @@ extern uint32_t compare256_unaligned_avx2(const uint8_t *src0, const uint8_t *sr
 #endif
 #endif
 
+#ifdef DEFLATE_H_
 /* insert_string */
 extern void insert_string_c(deflate_state *const s, const uint32_t str, uint32_t count);
 #ifdef X86_SSE42_CRC_HASH
@@ -200,6 +200,7 @@ extern uint32_t update_hash_c(deflate_state *const s, uint32_t h, uint32_t val);
 extern uint32_t update_hash_sse4(deflate_state *const s, uint32_t h, uint32_t val);
 #elif defined(ARM_ACLE_CRC_HASH)
 extern uint32_t update_hash_acle(deflate_state *const s, uint32_t h, uint32_t val);
+#endif
 #endif
 
 #endif

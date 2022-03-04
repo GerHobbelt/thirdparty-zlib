@@ -5,13 +5,12 @@
  *
 */
 
-#include "../../zutil.h"
+#include "../../zbuild.h"
 
 #ifdef ARM_ACLE_CRC_HASH
 #ifndef _MSC_VER
 #  include <arm_acle.h>
 #endif
-
 
 uint32_t crc32_acle(uint32_t crc, const unsigned char *buf, uint64_t len) {
     Z_REGISTER uint32_t c;

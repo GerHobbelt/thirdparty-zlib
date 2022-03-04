@@ -25,7 +25,7 @@
  * This code uses gcc vector builtins instead using assembly directly.
  */
 
-#include "zutil.h"
+#include "zbuild.h"
 
 #if defined(PPC_FEATURES) || defined(POWER_FEATURES)
 
