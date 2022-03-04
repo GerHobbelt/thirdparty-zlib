@@ -9,53 +9,22 @@
 #include "deflate.h"
 #include "crc32_fold.h"
 
-#ifdef X86_FEATURES
+#if defined(X86_FEATURES)
+#  include "arch/x86/x86.h"
 #  include "fallback_builtins.h"
+#elif defined(ARM_FEATURES)
+#  include "arch/arm/arm.h"
+#elif defined(PPC_FEATURES) || defined(POWER_FEATURES)
+#  include "arch/power/power.h"
+#elif defined(S390_FEATURES)
+#  include "arch/s390/s390.h"
 #endif
 
 extern void cpu_check_features();
 
-/* update_hash */
-extern uint32_t update_hash_c(deflate_state *const s, uint32_t h, uint32_t val);
-#ifdef X86_SSE42_CRC_HASH
-extern uint32_t update_hash_sse4(deflate_state *const s, uint32_t h, uint32_t val);
-#elif defined(ARM_ACLE_CRC_HASH)
-extern uint32_t update_hash_acle(deflate_state *const s, uint32_t h, uint32_t val);
-#endif
-
-/* insert_string */
-extern void insert_string_c(deflate_state *const s, const uint32_t str, uint32_t count);
-#ifdef X86_SSE42_CRC_HASH
-extern void insert_string_sse4(deflate_state *const s, const uint32_t str, uint32_t count);
-#elif defined(ARM_ACLE_CRC_HASH)
-extern void insert_string_acle(deflate_state *const s, const uint32_t str, uint32_t count);
-#endif
-
-/* quick_insert_string */
-extern Pos quick_insert_string_c(deflate_state *const s, const uint32_t str);
-#ifdef X86_SSE42_CRC_HASH
-extern Pos quick_insert_string_sse4(deflate_state *const s, const uint32_t str);
-#elif defined(ARM_ACLE_CRC_HASH)
-extern Pos quick_insert_string_acle(deflate_state *const s, const uint32_t str);
-#endif
-
-/* slide_hash */
-#ifdef X86_SSE2
-void slide_hash_sse2(deflate_state *s);
-#elif defined(ARM_NEON_SLIDEHASH)
-void slide_hash_neon(deflate_state *s);
-#endif
-#if defined(PPC_VMX_SLIDEHASH)
-void slide_hash_vmx(deflate_state *s);
-#endif
-#if defined(POWER8_VSX_SLIDEHASH)
-void slide_hash_power8(deflate_state *s);
-#endif
-#ifdef X86_AVX2
-void slide_hash_avx2(deflate_state *s);
-#endif
-
 /* adler32 */
+typedef uint32_t (*adler32_func)(uint32_t adler, const unsigned char *buf, size_t len);
+
 extern uint32_t adler32_c(uint32_t adler, const unsigned char *buf, size_t len);
 #ifdef ARM_NEON_ADLER32
 extern uint32_t adler32_neon(uint32_t adler, const unsigned char *buf, size_t len);
@@ -130,6 +99,8 @@ extern uint8_t* chunkmemset_safe_power8(uint8_t *out, unsigned dist, unsigned le
 #endif
 
 /* CRC32 */
+typedef uint32_t (*crc32_func)(uint32_t crc32, const unsigned char * buf, uint64_t len);
+
 extern uint32_t crc32_byfour(uint32_t crc, const unsigned char *buf, uint64_t len);
 #ifdef ARM_ACLE_CRC_HASH
 extern uint32_t crc32_acle(uint32_t crc, const unsigned char *buf, uint64_t len);
@@ -140,19 +111,29 @@ extern uint32_t s390_crc32_vx(uint32_t crc, const unsigned char *buf, uint64_t l
 #endif
 
 /* compare256 */
-extern uint32_t compare256_c(const unsigned char *src0, const unsigned char *src1);
+typedef uint32_t (*compare256_func)(const uint8_t *src0, const uint8_t *src1);
+
+extern uint32_t compare256_c(const uint8_t *src0, const uint8_t *src1);
 #ifdef UNALIGNED_OK
-extern uint32_t compare256_unaligned_16(const unsigned char *src0, const unsigned char *src1);
-extern uint32_t compare256_unaligned_32(const unsigned char *src0, const unsigned char *src1);
+extern uint32_t compare256_unaligned_16(const uint8_t *src0, const uint8_t *src1);
+extern uint32_t compare256_unaligned_32(const uint8_t *src0, const uint8_t *src1);
 #ifdef UNALIGNED64_OK
-extern uint32_t compare256_unaligned_64(const unsigned char *src0, const unsigned char *src1);
+extern uint32_t compare256_unaligned_64(const uint8_t *src0, const uint8_t *src1);
 #endif
 #ifdef X86_SSE42_CMP_STR
-extern uint32_t compare256_unaligned_sse4(const unsigned char *src0, const unsigned char *src1);
+extern uint32_t compare256_unaligned_sse4(const uint8_t *src0, const uint8_t *src1);
 #endif
 #if defined(X86_AVX2) && defined(HAVE_BUILTIN_CTZ)
-extern uint32_t compare256_unaligned_avx2(const unsigned char *src0, const unsigned char *src1);
+extern uint32_t compare256_unaligned_avx2(const uint8_t *src0, const uint8_t *src1);
 #endif
+#endif
+
+/* insert_string */
+extern void insert_string_c(deflate_state *const s, const uint32_t str, uint32_t count);
+#ifdef X86_SSE42_CRC_HASH
+extern void insert_string_sse4(deflate_state *const s, const uint32_t str, uint32_t count);
+#elif defined(ARM_ACLE_CRC_HASH)
+extern void insert_string_acle(deflate_state *const s, const uint32_t str, uint32_t count);
 #endif
 
 /* longest_match */
@@ -185,6 +166,40 @@ extern uint32_t longest_match_slow_unaligned_sse4(deflate_state *const s, Pos cu
 #if defined(X86_AVX2) && defined(HAVE_BUILTIN_CTZ)
 extern uint32_t longest_match_slow_unaligned_avx2(deflate_state *const s, Pos cur_match);
 #endif
+#endif
+
+/* quick_insert_string */
+extern Pos quick_insert_string_c(deflate_state *const s, const uint32_t str);
+#ifdef X86_SSE42_CRC_HASH
+extern Pos quick_insert_string_sse4(deflate_state *const s, const uint32_t str);
+#elif defined(ARM_ACLE_CRC_HASH)
+extern Pos quick_insert_string_acle(deflate_state *const s, const uint32_t str);
+#endif
+
+/* slide_hash */
+typedef void (*slide_hash_func)(deflate_state *s);
+
+#ifdef X86_SSE2
+extern void slide_hash_sse2(deflate_state *s);
+#elif defined(ARM_NEON_SLIDEHASH)
+extern void slide_hash_neon(deflate_state *s);
+#endif
+#if defined(PPC_VMX_SLIDEHASH)
+extern void slide_hash_vmx(deflate_state *s);
+#endif
+#if defined(POWER8_VSX_SLIDEHASH)
+extern void slide_hash_power8(deflate_state *s);
+#endif
+#ifdef X86_AVX2
+extern void slide_hash_avx2(deflate_state *s);
+#endif
+
+/* update_hash */
+extern uint32_t update_hash_c(deflate_state *const s, uint32_t h, uint32_t val);
+#ifdef X86_SSE42_CRC_HASH
+extern uint32_t update_hash_sse4(deflate_state *const s, uint32_t h, uint32_t val);
+#elif defined(ARM_ACLE_CRC_HASH)
+extern uint32_t update_hash_acle(deflate_state *const s, uint32_t h, uint32_t val);
 #endif
 
 #endif
