@@ -20,6 +20,11 @@ z_const unsigned char compressed[] = {
     0x49, 0xac, 0xaa, 0x54, 0x48, 0xc9, 0x4f, 0x07, 0x00, 0x6b, 0x93, 0x10, 0x30
 };
 
+
+#if defined(BUILD_MONOLITHIC)
+#define main()      zlib_inflate_adler32_test_main()
+#endif
+
 int main()
 {
     unsigned char uncompressed[1024];

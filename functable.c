@@ -453,11 +453,6 @@ Z_INTERNAL Z_TLS struct functable_s functable = {
     update_hash_stub
 };
 
-#if defined(_MSC_VER)
-#define MSVC_HOTFIX_INCLUDE 1
-#include "arch\x86\x86.c"
-#endif
-
 Z_EXPORT
 void zng_lib_init(void)
 {
