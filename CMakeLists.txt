@@ -75,6 +75,7 @@ option(ZLIB_COMPAT "Compile with zlib compatible API" OFF)
 option(ZLIB_ENABLE_TESTS "Build test binaries" ON)
 option(ZLIB_DUAL_LINK "Dual link tests against system zlib" OFF)
 option(WITH_FUZZERS "Build test/fuzz" OFF)
+option(WITH_BENCHMARKS "Build test/benchmarks" OFF)
 option(WITH_OPTIM "Build with optimisation" ON)
 option(WITH_REDUCED_MEM "Reduced memory usage for special cases (reduces performance)" OFF)
 option(WITH_NEW_STRATEGIES "Use new strategies" ON)
@@ -719,8 +720,8 @@ if(WITH_OPTIM)
                 add_feature_info(AVX2_SLIDEHASH 1 "Support AVX2 optimized slide_hash, using \"${AVX2FLAG}\"")
                 list(APPEND AVX2_SRCS ${ARCHDIR}/chunkset_avx.c)
                 add_feature_info(AVX_CHUNKSET 1 "Support AVX optimized chunkset, using \"${AVX2FLAG}\"")
-                list(APPEND AVX2_SRCS ${ARCHDIR}/compare258_avx2.c)
-                add_feature_info(AVX2_COMPARE258 1 "Support AVX2 optimized compare258, using \"${AVX2FLAG}\"")
+                list(APPEND AVX2_SRCS ${ARCHDIR}/compare256_avx2.c)
+                add_feature_info(AVX2_COMPARE256 1 "Support AVX2 optimized compare256, using \"${AVX2FLAG}\"")
                 list(APPEND AVX2_SRCS ${ARCHDIR}/adler32_avx2.c)
                 add_feature_info(AVX2_ADLER32 1 "Support AVX2-accelerated adler32, using \"${AVX2FLAG}\"")
                 list(APPEND ZLIB_ARCH_SRCS ${AVX2_SRCS})
@@ -782,8 +783,8 @@ if(WITH_OPTIM)
             endif()
             if(HAVE_SSE42CMPSTR_INTRIN)
                 add_definitions(-DX86_SSE42_CMP_STR)
-                set(SSE42_SRCS ${ARCHDIR}/compare258_sse42.c)
-                add_feature_info(SSE42_COMPARE258 1 "Support SSE4.2 optimized compare258, using \"${SSE42FLAG}\"")
+                set(SSE42_SRCS ${ARCHDIR}/compare256_sse42.c)
+                add_feature_info(SSE42_COMPARE256 1 "Support SSE4.2 optimized compare256, using \"${SSE42FLAG}\"")
                 list(APPEND ZLIB_ARCH_SRCS ${SSE42_SRCS})
                 set_property(SOURCE ${SSE42_SRCS} PROPERTY COMPILE_FLAGS "${SSE42FLAG} ${NOLTOFLAG}")
             endif()
@@ -922,6 +923,7 @@ set(ZLIB_PUBLIC_HDRS
 set(ZLIB_PRIVATE_HDRS
     adler32_p.h
     chunkset_tpl.h
+    cpu_features.h
     crc32_p.h
     crc32_tbl.h
     crc32_comb_tbl.h
@@ -946,8 +948,9 @@ set(ZLIB_PRIVATE_HDRS
 set(ZLIB_SRCS
     adler32.c
     chunkset.c
-    compare258.c
+    compare256.c
     compress.c
+    cpu_features.c
     crc32.c
     crc32_comb.c
     crc32_fold.c
@@ -1280,12 +1283,16 @@ if(ZLIB_ENABLE_TESTS)
         set(FUZZERS checksum compress example_small example_large example_flush example_dict minigzip)
         file(GLOB ALL_SRC_FILES "${CMAKE_CURRENT_SOURCE_DIR}/*")
         foreach(FUZZER ${FUZZERS})
-            add_executable(${FUZZER}_fuzzer test/fuzz/${FUZZER}_fuzzer.c test/fuzz/standalone_fuzz_target_runner.c)
-            configure_test_executable(${FUZZER}_fuzzer)
-            target_link_libraries(${FUZZER}_fuzzer zlib)
-            set(FUZZER_COMMAND ${CMAKE_CROSSCOMPILING_EMULATOR} $<TARGET_FILE:${FUZZER}_fuzzer> ${ALL_SRC_FILES})
-            add_test(NAME ${FUZZER}_fuzzer COMMAND ${FUZZER_COMMAND})
+            add_executable(fuzzer_${FUZZER} test/fuzz/fuzzer_${FUZZER}.c test/fuzz/standalone_fuzz_target_runner.c)
+            configure_test_executable(fuzzer_${FUZZER})
+            target_link_libraries(fuzzer_${FUZZER} zlib)
+            set(FUZZER_COMMAND ${CMAKE_CROSSCOMPILING_EMULATOR} $<TARGET_FILE:fuzzer_${FUZZER}> ${ALL_SRC_FILES})
+            add_test(NAME fuzzer_${FUZZER} COMMAND ${FUZZER_COMMAND})
         endforeach()
+    endif()
+
+    if(WITH_BENCHMARKS)
+        add_subdirectory(test/benchmarks)
     endif()
 
     macro(test_minigzip name path)
@@ -1446,6 +1453,7 @@ add_feature_info(ZLIB_ENABLE_TESTS ZLIB_ENABLE_TESTS "Build test binaries")
 add_feature_info(ZLIB_DUAL_LINK ZLIB_DUAL_LINK "Dual link tests against system zlib")
 add_feature_info(WITH_SANITIZER WITH_SANITIZER "Enable sanitizer support")
 add_feature_info(WITH_FUZZERS WITH_FUZZERS "Build test/fuzz")
+add_feature_info(WITH_BENCHMARKS WITH_BENCHMARKS "Build test/benchmarks")
 add_feature_info(WITH_OPTIM WITH_OPTIM "Build with optimisation")
 add_feature_info(WITH_NEW_STRATEGIES WITH_NEW_STRATEGIES "Use new strategies")
 add_feature_info(WITH_NATIVE_INSTRUCTIONS WITH_NATIVE_INSTRUCTIONS

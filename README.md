@@ -22,12 +22,11 @@ Features
 * Deflate medium and quick algorithms based on Intels zlib fork
 * Support for CPU intrinsics when available
   * Adler32 implementation using SSSE3, AVX2, AVX512, AVX512-VNNI, Neon, VMX & VSX
-  * CRC32-B implementation using PCLMULQDQ, VPCLMULQDQ, & ACLE
+  * CRC32-B implementation using PCLMULQDQ, VPCLMULQDQ, ACLE, & IBM Z
   * Hash table implementation using CRC32-C intrinsics on x86 and ARM
   * Slide hash implementations using SSE2, AVX2, Neon, VMX & VSX
-  * Compare256/258 implementations using SSE4.2 & AVX2
-  * Inflate chunk copying using SSE2, AVX2, Neon & VSX
-  * CRC32 implementation using IBM Z vector instructions
+  * Compare256 implementations using SSE4.2 & AVX2
+  * Inflate chunk copying using SSE2, AVX, Neon & VSX
   * Support for hardware-accelerated deflate using IBM Z DFLTCC
 * Unaligned memory read/writes and large bit buffer improvements
 * Includes improvements from Cloudflare and Intel forks
@@ -122,6 +121,7 @@ Build Options
 | WITH_NATIVE_INSTRUCTIONS | --native                 | Compiles with full instruction set supported on this host (gcc/clang -march=native)   | OFF     |
 | WITH_SANITIZER           | --with-sanitizer         | Build with sanitizer (memory, address, undefined)                                     | OFF     |
 | WITH_FUZZERS             | --with-fuzzers           | Build test/fuzz                                                                       | OFF     |
+| WITH_BENCHMARKS          |                          | Build test/benchmarks                                                                 | OFF     |
 | WITH_MAINTAINER_WARNINGS |                          | Build with project maintainer warnings                                                | OFF     |
 | WITH_CODE_COVERAGE       |                          | Enable code coverage reporting                                                        | OFF     |
 
