@@ -17,6 +17,7 @@
 #else
 #  include <arm_neon.h>
 #endif
+#include "../../fallback_builtins.h"
 
 /* SIMD version of hash_chain rebase */
 static inline void slide_hash_chain(Pos *table, uint32_t entries, uint16_t wsize) {
@@ -34,14 +35,8 @@ static inline void slide_hash_chain(Pos *table, uint32_t entries, uint16_t wsize
     do {
         p0 = vld1q_u16_x4(table); 
         p1 = vld1q_u16_x4(table+32); 
-        p0.val[0] = vqsubq_u16(p0.val[0], v);
-        p0.val[1] = vqsubq_u16(p0.val[1], v);
-        p0.val[2] = vqsubq_u16(p0.val[2], v);
-        p0.val[3] = vqsubq_u16(p0.val[3], v);
-        p1.val[0] = vqsubq_u16(p1.val[0], v);
-        p1.val[1] = vqsubq_u16(p1.val[1], v);
-        p1.val[2] = vqsubq_u16(p1.val[2], v);
-        p1.val[3] = vqsubq_u16(p1.val[3], v);
+        vqsubq_u16_x4_x1(p0, p0, v);
+        vqsubq_u16_x4_x1(p1, p1, v);
         vst1q_u16_x4(table, p0);
         vst1q_u16_x4(table+32, p1);
         table += 64;
