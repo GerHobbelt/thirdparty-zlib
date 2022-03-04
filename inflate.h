@@ -103,7 +103,14 @@ struct inflate_state {
     uint32_t wnext;             /* window write index */
     unsigned char *window;      /* allocated sliding window, if needed */
 
-    struct crc32_fold_s ALIGNED_(16) crc_fold;
+#if defined(_MSC_VER)
+#pragma warning(push)
+#pragma warning(disable : 4324)   // structure was padded due to alignment specifier
+#endif
+	struct crc32_fold_s ALIGNED_(16) crc_fold;
+#if defined(_MSC_VER)
+#pragma warning(pop)
+#endif
 
         /* bit accumulator */
     uint32_t hold;              /* input bit accumulator */

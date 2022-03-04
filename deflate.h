@@ -211,7 +211,14 @@ struct internal_state {
 
     int nice_match; /* Stop searching when current match exceeds this */
 
+#if defined(_MSC_VER)
+#pragma warning(push)
+#pragma warning(disable : 4324)   // structure was padded due to alignment specifier
+#endif
     struct crc32_fold_s ALIGNED_(16) crc_fold;
+#if defined(_MSC_VER)
+#pragma warning(pop)
+#endif
 
                 /* used by trees.c: */
     /* Didn't use ct_data typedef below to suppress compiler warning */
