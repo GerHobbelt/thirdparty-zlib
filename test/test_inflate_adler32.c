@@ -1,6 +1,7 @@
 /* GH-1066 - inflate small amount of data and validate with adler32 checksum. */
 
 #include "zbuild.h"
+#include "zutil.h"
 #ifdef ZLIB_COMPAT
 #  include "zlib.h"
 #else

@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <inttypes.h>
 #include "zbuild.h"
+#include "zutil.h"
 #include "deflate.h"
 #include "crc32_p.h"
 

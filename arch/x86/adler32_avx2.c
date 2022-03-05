@@ -6,6 +6,7 @@
  */
 
 #include "../../zbuild.h"
+#include "../../zutil.h"
 #include "../../adler32_p.h"
 #include "../../fallback_builtins.h"
 

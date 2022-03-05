@@ -4,12 +4,12 @@
  */
 
 #include "zbuild.h"
+#include "zutil.h"
 #include "zendian.h"
 #include "crc32_p.h"
 #include "deflate.h"
 #include "deflate_p.h"
 #include "functable.h"
-#include "zutil.h"      // cpu_check_features()
 
 #include "cpu_features.h"
 

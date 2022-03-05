@@ -4,6 +4,7 @@
  */
 
 #include "zbuild.h"
+#include "zutil.h"
 #include "deflate.h"
 
 #ifdef PPC_FEATURES

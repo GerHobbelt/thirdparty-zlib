@@ -17,6 +17,7 @@
  */
 
 #include "../../zbuild.h"
+#include "../../zutil.h"
 
 #ifdef X86_PCLMULQDQ_CRC
 

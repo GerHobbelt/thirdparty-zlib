@@ -3,6 +3,7 @@
  */
 
 #include "../../zbuild.h"
+#include "../../zutil.h"
 
 #ifdef POWER8_VSX_CHUNKSET
 #include <altivec.h>

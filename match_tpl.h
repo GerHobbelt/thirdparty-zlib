@@ -9,6 +9,7 @@
  */
 
 #include "zbuild.h"
+#include "zutil.h"
 #include "deflate.h"
 #include "functable.h"
 

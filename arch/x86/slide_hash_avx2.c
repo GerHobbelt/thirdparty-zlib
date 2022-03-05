@@ -10,6 +10,7 @@
  * For conditions of distribution and use, see copyright notice in zlib.h
  */
 #include "../../zbuild.h"
+#include "../../zutil.h"
 #include "../../deflate.h"
 
 #ifdef __AVX__

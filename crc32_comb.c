@@ -10,6 +10,7 @@
  */
 
 #include "zbuild.h"
+#include "zutil.h"
 #include "deflate.h"
 #include "crc32_p.h"
 #include "crc32_comb_tbl.h"

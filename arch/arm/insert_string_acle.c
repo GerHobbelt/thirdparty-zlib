@@ -5,12 +5,14 @@
  *
  */
 
+#include "../../zbuild.h"
+#include "../../zutil.h"
+#include "../../deflate.h"
+
 #ifdef ARM_ACLE_CRC_HASH
 #ifndef _MSC_VER
 #  include <arm_acle.h>
 #endif
-#include "../../zbuild.h"
-#include "../../deflate.h"
 
 #define HASH_CALC(s, h, val) \
     h = __crc32w(0, val)

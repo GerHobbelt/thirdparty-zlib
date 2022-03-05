@@ -4,6 +4,7 @@
  */
 
 #include "../../zbuild.h"
+#include "../../zutil.h"
 
 #include "fallback_builtins.h"
 

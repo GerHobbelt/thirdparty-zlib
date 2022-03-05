@@ -6,6 +6,8 @@
  */
 
 #include "../../zbuild.h"
+#include "../../zutil.h"
+
 #include <immintrin.h>
 #ifdef _MSC_VER
 #  include <nmmintrin.h>

@@ -2,6 +2,7 @@
 #define TREES_EMIT_H_
 
 #include "zbuild.h"
+#include "zutil.h"
 #include "trees.h"
 
 #ifdef ZLIB_DEBUG

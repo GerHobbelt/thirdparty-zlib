@@ -2,6 +2,7 @@
 #define CRC32_P_H_
 
 #include "zbuild.h"
+#include "zutil.h"
 #include "zendian.h"
 
 #define GF2_DIM 32      /* dimension of GF(2) vectors (length of CRC) */

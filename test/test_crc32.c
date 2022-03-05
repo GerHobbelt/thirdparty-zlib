@@ -6,6 +6,7 @@
  */
 
 #include "zbuild.h"
+#include "zutil.h"
 #ifdef ZLIB_COMPAT
 #  include "zlib.h"
 #else

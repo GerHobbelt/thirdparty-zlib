@@ -18,6 +18,7 @@
  */
 
 #include "zbuild.h"
+#include "zutil.h"
 #include "deflate.h"
 #include "deflate_p.h"
 #include "functable.h"

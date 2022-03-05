@@ -4,6 +4,7 @@
  */
 
 #include "zbuild.h"
+#include "zutil.h"
 #include "functable.h"
 #include "adler32_p.h"
 

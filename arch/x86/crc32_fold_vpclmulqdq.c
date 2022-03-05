@@ -3,8 +3,10 @@
  * For conditions of distribution and use, see copyright notice in zlib.h
  */
 
-#ifdef X86_VPCLMULQDQ_CRC
 #include "../../zbuild.h"
+#include "../../zutil.h"
+
+#ifdef X86_VPCLMULQDQ_CRC
 
 #include <immintrin.h>
 

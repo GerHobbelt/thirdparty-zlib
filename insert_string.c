@@ -6,6 +6,7 @@
  */
 
 #include "zbuild.h"
+#include "zutil.h"
 #include "deflate.h"
 
 #define HASH_SLIDE           16

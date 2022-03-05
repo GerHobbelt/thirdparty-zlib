@@ -10,6 +10,7 @@
  */
 
 #include "zbuild.h"
+#include "zutil.h"
 #include "zendian.h"
 #include "deflate.h"
 #include "functable.h"

@@ -9,6 +9,7 @@
  */
 
 #include "../../zbuild.h"
+#include "../../zutil.h"
 #include "../../deflate.h"
 
 #if defined(ARM_NEON_SLIDEHASH)

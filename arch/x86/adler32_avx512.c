@@ -7,6 +7,7 @@
  */
 
 #include "../../zbuild.h"
+#include "../../zutil.h"
 #include "../../adler32_p.h"
 #include "../../cpu_features.h"
 #include "../../fallback_builtins.h"

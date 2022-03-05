@@ -8,6 +8,7 @@
  */
 
 #include "../../zbuild.h"
+#include "../../zutil.h"
 
 #ifdef _MSC_VER
 #  include <intrin.h>

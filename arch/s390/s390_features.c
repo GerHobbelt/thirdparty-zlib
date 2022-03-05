@@ -1,6 +1,7 @@
 #if !defined(_MSC_VER)
 
 #include "../../zbuild.h"
+#include "../../zutil.h"
 #include "s390_features.h"
 
 #include <sys/auxv.h>

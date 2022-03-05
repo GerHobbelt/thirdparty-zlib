@@ -3,6 +3,7 @@
  */
 
 #include "zbuild.h"
+#include "zutil.h"
 
 typedef uint64_t chunk_t;
 

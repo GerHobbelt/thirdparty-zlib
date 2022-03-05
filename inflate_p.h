@@ -6,6 +6,7 @@
 #define INFLATE_P_H
 
 #include "zbuild.h"
+#include "zutil.h"
 #include "functable.h"
 
 /* Architecture-specific hooks. */

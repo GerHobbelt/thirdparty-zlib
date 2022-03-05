@@ -6,6 +6,7 @@
 */
 
 #include "../../zbuild.h"
+#include "../../zutil.h"
 
 #ifdef ARM_ACLE_CRC_HASH
 #ifndef _MSC_VER

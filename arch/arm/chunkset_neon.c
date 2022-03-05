@@ -3,6 +3,7 @@
  */
 
 #include "../../zbuild.h"
+#include "../../zutil.h"
 
 #ifdef ARM_NEON_CHUNKSET
 #ifdef _M_ARM64

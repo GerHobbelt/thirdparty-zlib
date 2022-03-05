@@ -13,6 +13,7 @@
  */
 
 #include "../../zbuild.h"
+#include "../../zutil.h"
 #include "crc32_p.h"
 
 #ifndef _MSC_VER   // TODO: make this an explicit check, e.g. defined(HAVE_VECINTRIN_H)

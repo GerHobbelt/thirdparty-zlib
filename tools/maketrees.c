@@ -5,6 +5,7 @@
 
 #include <stdio.h>
 #include "zbuild.h"
+#include "zutil.h"
 #include "deflate.h"
 #include "trees.h"
 

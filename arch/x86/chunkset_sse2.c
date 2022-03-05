@@ -3,6 +3,7 @@
  */
 
 #include "zbuild.h"
+#include "zutil.h"
 
 #ifdef X86_SSE2
 #include <immintrin.h>

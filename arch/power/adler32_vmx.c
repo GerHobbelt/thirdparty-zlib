@@ -6,6 +6,7 @@
  */
 
 #include "zbuild.h"
+#include "zutil.h"
 
 #ifdef PPC_VMX_ADLER32
 #include <altivec.h>

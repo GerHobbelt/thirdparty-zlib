@@ -7,6 +7,7 @@
  */
 
 #include "../../zbuild.h"
+#include "../../zutil.h"
 
 #ifdef ARM_NEON_ADLER32
 #ifdef _M_ARM64

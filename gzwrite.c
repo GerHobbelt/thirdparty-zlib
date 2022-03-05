@@ -4,6 +4,7 @@
  */
 
 #include "zbuild.h"
+#include "zutil.h"
 #include "zutil_p.h"
 #include <stdarg.h>
 #include "gzguts.h"

@@ -26,6 +26,7 @@
  */
 
 #include "zbuild.h"
+#include "zutil.h"
 
 #if defined(PPC_FEATURES) || defined(POWER_FEATURES)
 

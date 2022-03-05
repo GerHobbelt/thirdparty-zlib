@@ -3,6 +3,7 @@
  */
 
 #include "zbuild.h"
+#include "zutil.h"
 
 /* Returns the chunk size */
 Z_INTERNAL uint32_t CHUNKSIZE(void) {
