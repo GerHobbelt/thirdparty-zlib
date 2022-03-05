@@ -99,6 +99,7 @@ Z_INTERNAL void slide_hash_stub(deflate_state *s) {
 }
 
 Z_INTERNAL uint32_t longest_match_stub(deflate_state *const s, Pos cur_match) {
+    cpu_check_features();
 
 #ifdef UNALIGNED_OK
 #  if defined(UNALIGNED64_OK) && defined(HAVE_BUILTIN_CTZLL)
@@ -124,6 +125,7 @@ Z_INTERNAL uint32_t longest_match_stub(deflate_state *const s, Pos cur_match) {
 }
 
 Z_INTERNAL uint32_t longest_match_slow_stub(deflate_state *const s, Pos cur_match) {
+    cpu_check_features();
 
 #ifdef UNALIGNED_OK
 #  if defined(UNALIGNED64_OK) && defined(HAVE_BUILTIN_CTZLL)
@@ -391,6 +393,7 @@ Z_INTERNAL uint32_t crc32_stub(uint32_t crc, const unsigned char *buf, uint64_t 
 
     functable.crc32 = &crc32_byfour;
     cpu_check_features();
+
 #ifdef ARM_ACLE_CRC_HASH
     if (arm_cpu_has_crc32)
         functable.crc32 = &crc32_acle;
@@ -409,7 +412,6 @@ Z_INTERNAL uint32_t crc32_stub(uint32_t crc, const unsigned char *buf, uint64_t 
 }
 
 Z_INTERNAL uint32_t compare256_stub(const uint8_t *src0, const uint8_t *src1) {
-
     functable.compare256 = &compare256_c;
     cpu_check_features();
 
@@ -459,9 +461,5 @@ Z_INTERNAL Z_TLS struct functable_s functable = {
 Z_EXPORT
 void zng_lib_init(void)
 {
-	// have these 'constructors' already been invoked and the `functable` set up properly? If yes, then skip/exit now.
-	if (functable.longest_match)
-		return;
-
 	cpu_check_features();
 }
