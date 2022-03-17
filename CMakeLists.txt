@@ -77,6 +77,7 @@ option(ZLIB_ENABLE_TESTS "Build test binaries" ON)
 option(ZLIB_DUAL_LINK "Dual link tests against system zlib" OFF)
 option(WITH_FUZZERS "Build test/fuzz" OFF)
 option(WITH_BENCHMARKS "Build test/benchmarks" OFF)
+option(WITH_BENCHMARK_APPS "Build application benchmarks" OFF)
 option(WITH_OPTIM "Build with optimisation" ON)
 option(WITH_REDUCED_MEM "Reduced memory usage for special cases (reduces performance)" OFF)
 option(WITH_NEW_STRATEGIES "Use new strategies" ON)
@@ -1164,6 +1165,12 @@ endif()
 option(ZLIB_ENABLE_TESTS "Build test binaries" ON)
 if(ZLIB_ENABLE_TESTS)
     enable_testing()
+
+    add_subdirectory(test)
+    if(WITH_BENCHMARKS)
+        add_subdirectory(test/benchmarks)
+    endif()
+
     macro(configure_test_executable target)
         target_include_directories(${target} PUBLIC
             "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>"
@@ -1186,20 +1193,6 @@ if(ZLIB_ENABLE_TESTS)
         target_link_libraries(${target} zlib)
         add_test(NAME ${target} COMMAND ${CMAKE_CROSSCOMPILING_EMULATOR} $<TARGET_FILE:${target}>)
     endmacro()
-
-    file(GLOB TEST_SRCS
-        LIST_DIRECTORIES false
-        RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}/test
-        ${CMAKE_CURRENT_SOURCE_DIR}/test/test_*.c)
-
-    foreach(TEST_SRC ${TEST_SRCS})
-        get_filename_component(TEST_NAME ${TEST_SRC} NAME_WE)
-        add_simple_test_executable(${TEST_NAME})
-    endforeach()
-
-    if(NOT WIN32 AND ZLIB_COMPAT)
-        add_simple_test_executable(CVE-2003-0107)
-    endif()
 
     add_simple_test_executable(example)
 
@@ -1235,7 +1228,7 @@ if(ZLIB_ENABLE_TESTS)
     target_link_libraries(switchlevels zlib)
 
     add_simple_test_executable(infcover)
-    if(NOT BUILD_SHARED_LIBS)
+    if(NOT DEFINED BUILD_SHARED_LIBS OR BUILD_SHARED_LIBS)
         target_sources(infcover PRIVATE inftrees.c)
     endif()
 
@@ -1300,10 +1293,6 @@ if(ZLIB_ENABLE_TESTS)
             set(FUZZER_COMMAND ${CMAKE_CROSSCOMPILING_EMULATOR} $<TARGET_FILE:fuzzer_${FUZZER}> ${ALL_SRC_FILES})
             add_test(NAME fuzzer_${FUZZER} COMMAND ${FUZZER_COMMAND})
         endforeach()
-    endif()
-
-    if(WITH_BENCHMARKS)
-        add_subdirectory(test/benchmarks)
     endif()
 
     macro(test_minigzip name path)
@@ -1456,6 +1445,7 @@ add_feature_info(ZLIB_DUAL_LINK ZLIB_DUAL_LINK "Dual link tests against system z
 add_feature_info(WITH_SANITIZER WITH_SANITIZER "Enable sanitizer support")
 add_feature_info(WITH_FUZZERS WITH_FUZZERS "Build test/fuzz")
 add_feature_info(WITH_BENCHMARKS WITH_BENCHMARKS "Build test/benchmarks")
+add_feature_info(WITH_BENCHMARK_APPS WITH_BENCHMARK_APPS "Build application benchmarks")
 add_feature_info(WITH_OPTIM WITH_OPTIM "Build with optimisation")
 add_feature_info(WITH_NEW_STRATEGIES WITH_NEW_STRATEGIES "Use new strategies")
 add_feature_info(WITH_NATIVE_INSTRUCTIONS WITH_NATIVE_INSTRUCTIONS

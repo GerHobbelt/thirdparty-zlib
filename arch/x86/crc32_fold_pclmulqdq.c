@@ -504,8 +504,6 @@ Z_INTERNAL void crc32_fold_pclmulqdq(crc32_fold *crc, const uint8_t *src, size_t
         partial_fold((size_t)len, &xmm_crc0, &xmm_crc1, &xmm_crc2, &xmm_crc3, &xmm_crc_part);
     }
 
-    partial_fold((size_t)len, &xmm_crc0, &xmm_crc1, &xmm_crc2, &xmm_crc3, &xmm_crc_part);
-done_nocopy:
     crc32_fold_save((__m128i *)crc->fold, xmm_crc0, xmm_crc1, xmm_crc2, xmm_crc3);
 }
 
