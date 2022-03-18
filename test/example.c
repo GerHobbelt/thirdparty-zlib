@@ -41,13 +41,6 @@ static void test_sync          (unsigned char *compr, size_t comprLen, unsigned 
 static void test_dict_deflate  (unsigned char *compr, size_t comprLen);
 static void test_dict_inflate  (unsigned char *compr, size_t comprLen, unsigned char *uncompr, size_t uncomprLen);
 
-#if defined(BUILD_MONOLITHIC)
-#define main(cnt, arr)      zlib_example_main(cnt, arr)
-#endif
-
-int  main               (int argc, const char** argv);
-
-
 static alloc_func zalloc = NULL;
 static free_func zfree = NULL;
 
@@ -958,9 +951,13 @@ static void test_deflate_tune(unsigned char *compr, size_t comprLen) {
  * Usage:  example [output.gz  [input.gz]]
  */
 
+#if defined(BUILD_MONOLITHIC)
+#define main(cnt, arr)      zlib_test_example_main(cnt, arr)
+#endif
+
 int main(int argc, const char** argv)
 {
-    unsigned char *compr, *uncompr;
+	unsigned char *compr, *uncompr;
     z_size_t comprLen = 10000*sizeof(int); /* don't overflow on MSDOS */
     z_size_t uncomprLen = comprLen;
     static const char* myVersion = PREFIX2(VERSION);
