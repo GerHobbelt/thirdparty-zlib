@@ -1,4 +1,4 @@
-<abi-corpus path='btmp1/libz.so.1.2.11' architecture='elf-arm' soname='libz.so.1'>
+<abi-corpus path='btmp1/libz.so.1.2.12' architecture='elf-arm' soname='libz.so.1'>
   <elf-needed>
     <dependency name='libc.so.6'/>
     <dependency name='ld-linux-armhf.so.3'/>

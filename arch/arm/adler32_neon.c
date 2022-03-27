@@ -1,4 +1,4 @@
-/* Copyright (C) 1995-2011, 2016 Mark Adler
+/* Copyright (C) 1995-2022 Mark Adler
  * Copyright (C) 2017 ARM Holdings Inc.
  * Authors: 
  *   Adenilson Cavalcanti <adenilson.cavalcanti@arm.com>

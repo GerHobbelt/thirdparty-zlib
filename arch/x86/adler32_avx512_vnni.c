@@ -1,6 +1,6 @@
 /* adler32_avx512_vnni.c -- compute the Adler-32 checksum of a data stream
  * Based on Brian Bockelman's AVX2 version
- * Copyright (C) 1995-2011 Mark Adler
+ * Copyright (C) 1995-2022 Mark Adler
  * Authors:
  *   Adam Stylinski <kungfujesus06@gmail.com>
  *   Brian Bockelman <bockelman@gmail.com>

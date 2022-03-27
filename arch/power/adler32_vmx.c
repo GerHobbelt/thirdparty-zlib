@@ -1,5 +1,5 @@
 /* adler32_vmx.c -- compute the Adler-32 checksum of a data stream
- * Copyright (C) 1995-2011 Mark Adler
+ * Copyright (C) 1995-2022 Mark Adler
  * Copyright (C) 2017-2021 Mika T. Lindqvist <postmaster@raasu.org>
  * Copyright (C) 2021 Adam Stylinski <kungfujesus06@gmail.com>
  * For conditions of distribution and use, see copyright notice in zlib.h

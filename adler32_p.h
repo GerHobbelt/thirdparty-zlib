@@ -1,7 +1,7 @@
 /* adler32_p.h -- Private inline functions and macros shared with
  *                different computation of the Adler-32 checksum
  *                of a data stream.
- * Copyright (C) 1995-2011, 2016 Mark Adler
+ * Copyright (C) 1995-2022 Mark Adler
  * For conditions of distribution and use, see copyright notice in zlib.h
  */
 

@@ -1,5 +1,5 @@
 /* adler32_avx512.c -- compute the Adler-32 checksum of a data stream
- * Copyright (C) 1995-2011 Mark Adler
+ * Copyright (C) 1995-2022 Mark Adler
  * Authors:
  *   Adam Stylinski <kungfujesus06@gmail.com>
  *   Brian Bockelman <bockelman@gmail.com>

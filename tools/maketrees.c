@@ -1,5 +1,5 @@
 /* maketrees.c -- output static huffman trees
- * Copyright (C) 1995-2017 Jean-loup Gailly
+ * Copyright (C) 1995-2022 Jean-loup Gailly
  * For conditions of distribution and use, see copyright notice in zlib.h
  */
 
