@@ -337,6 +337,7 @@ int32_t Z_EXPORT PREFIX(inflateBack)(PREFIX3(stream) *strm, in_func in, void *in
             }
             Tracev((stderr, "inflate:       codes ok\n"));
             state->mode = LEN;
+            /* fallthrough */
 
         case LEN:
             /* use inflate_fast() if we have enough input and output */

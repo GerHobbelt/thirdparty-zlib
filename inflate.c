@@ -465,8 +465,8 @@ int32_t Z_EXPORT PREFIX(inflate)(PREFIX3(stream) *strm, int32_t flush) {
             state->mode = hold & 0x200 ? DICTID : TYPE;
             INITBITS();
             break;
-#ifdef GUNZIP
 
+#ifdef GUNZIP
         case FLAGS:
             NEEDBITS(16);
             state->flags = (int)(hold);
@@ -484,7 +484,7 @@ int32_t Z_EXPORT PREFIX(inflate)(PREFIX3(stream) *strm, int32_t flush) {
                 CRC2(state->check, hold);
             INITBITS();
             state->mode = TIME;
-
+            /* fallthrough */
         case TIME:
             NEEDBITS(32);
             if (state->head != NULL)
@@ -493,7 +493,7 @@ int32_t Z_EXPORT PREFIX(inflate)(PREFIX3(stream) *strm, int32_t flush) {
                 CRC4(state->check, hold);
             INITBITS();
             state->mode = OS;
-
+            /* fallthrough */
         case OS:
             NEEDBITS(16);
             if (state->head != NULL) {
@@ -504,7 +504,7 @@ int32_t Z_EXPORT PREFIX(inflate)(PREFIX3(stream) *strm, int32_t flush) {
                 CRC2(state->check, hold);
             INITBITS();
             state->mode = EXLEN;
-
+            /* fallthrough */
         case EXLEN:
             if (state->flags & 0x0400) {
                 NEEDBITS(16);
@@ -518,7 +518,7 @@ int32_t Z_EXPORT PREFIX(inflate)(PREFIX3(stream) *strm, int32_t flush) {
                 state->head->extra = NULL;
             }
             state->mode = EXTRA;
-
+            /* fallthrough */
         case EXTRA:
             if (state->flags & 0x0400) {
                 copy = state->length;
@@ -543,7 +543,7 @@ int32_t Z_EXPORT PREFIX(inflate)(PREFIX3(stream) *strm, int32_t flush) {
             }
             state->length = 0;
             state->mode = NAME;
-
+            /* fallthrough */
         case NAME:
             if (state->flags & 0x0800) {
                 if (have == 0) goto inf_leave;
@@ -564,7 +564,7 @@ int32_t Z_EXPORT PREFIX(inflate)(PREFIX3(stream) *strm, int32_t flush) {
             }
             state->length = 0;
             state->mode = COMMENT;
-
+            /* fallthrough */
         case COMMENT:
             if (state->flags & 0x1000) {
                 if (have == 0) goto inf_leave;
@@ -585,7 +585,7 @@ int32_t Z_EXPORT PREFIX(inflate)(PREFIX3(stream) *strm, int32_t flush) {
                 state->head->comment = NULL;
             }
             state->mode = HCRC;
-
+            /* fallthrough */
         case HCRC:
             if (state->flags & 0x0200) {
                 NEEDBITS(16);
@@ -610,7 +610,7 @@ int32_t Z_EXPORT PREFIX(inflate)(PREFIX3(stream) *strm, int32_t flush) {
             strm->adler = state->check = ZSWAP32(hold);
             INITBITS();
             state->mode = DICT;
-
+            /* fallthrough */
         case DICT:
             if (state->havedict == 0) {
                 RESTORE();
@@ -618,11 +618,11 @@ int32_t Z_EXPORT PREFIX(inflate)(PREFIX3(stream) *strm, int32_t flush) {
             }
             strm->adler = state->check = ADLER32_INITIAL_VALUE;
             state->mode = TYPE;
-
+            /* fallthrough */
         case TYPE:
             if (flush == Z_BLOCK || flush == Z_TREES)
                 goto inf_leave;
-
+            /* fallthrough */
         case TYPEDO:
             /* determine and dispatch block type */
             INFLATE_TYPEDO_HOOK(strm, flush);  /* hook for IBM Z DFLTCC */
@@ -672,10 +672,10 @@ int32_t Z_EXPORT PREFIX(inflate)(PREFIX3(stream) *strm, int32_t flush) {
             state->mode = COPY_;
             if (flush == Z_TREES)
                 goto inf_leave;
-
+            /* fallthrough */
         case COPY_:
             state->mode = COPY;
-
+            /* fallthrough */
         case COPY:
             /* copy stored block from input to output */
             copy = state->length;
@@ -714,7 +714,7 @@ int32_t Z_EXPORT PREFIX(inflate)(PREFIX3(stream) *strm, int32_t flush) {
             Tracev((stderr, "inflate:       table sizes ok\n"));
             state->have = 0;
             state->mode = LENLENS;
-
+            /* fallthrough */
         case LENLENS:
             /* get code length code lengths (not a typo) */
             while (state->have < state->ncode) {
@@ -735,7 +735,7 @@ int32_t Z_EXPORT PREFIX(inflate)(PREFIX3(stream) *strm, int32_t flush) {
             Tracev((stderr, "inflate:       code lengths ok\n"));
             state->have = 0;
             state->mode = CODELENS;
-
+            /* fallthrough */
         case CODELENS:
             /* get length and distance code code lengths */
             while (state->have < state->nlen + state->ndist) {
@@ -815,10 +815,10 @@ int32_t Z_EXPORT PREFIX(inflate)(PREFIX3(stream) *strm, int32_t flush) {
             state->mode = LEN_;
             if (flush == Z_TREES)
                 goto inf_leave;
-
+            /* fallthrough */
         case LEN_:
             state->mode = LEN;
-
+            /* fallthrough */
         case LEN:
             /* use inflate_fast() if we have enough input and output */
             if (have >= INFLATE_FAST_MIN_HAVE && left >= INFLATE_FAST_MIN_LEFT) {
@@ -879,7 +879,7 @@ int32_t Z_EXPORT PREFIX(inflate)(PREFIX3(stream) *strm, int32_t flush) {
             /* length code */
             state->extra = (here.op & 15);
             state->mode = LENEXT;
-
+            /* fallthrough */
         case LENEXT:
             /* get extra bits, if any */
             if (state->extra) {
@@ -891,7 +891,7 @@ int32_t Z_EXPORT PREFIX(inflate)(PREFIX3(stream) *strm, int32_t flush) {
             Tracevv((stderr, "inflate:         length %u\n", state->length));
             state->was = state->length;
             state->mode = DIST;
-
+            /* fallthrough */
         case DIST:
             /* get distance code */
             for (;;) {
@@ -920,7 +920,7 @@ int32_t Z_EXPORT PREFIX(inflate)(PREFIX3(stream) *strm, int32_t flush) {
             state->offset = here.val;
             state->extra = (here.op & 15);
             state->mode = DISTEXT;
-
+            /* fallthrough */
         case DISTEXT:
             /* get distance extra bits, if any */
             if (state->extra) {
@@ -937,7 +937,7 @@ int32_t Z_EXPORT PREFIX(inflate)(PREFIX3(stream) *strm, int32_t flush) {
 #endif
             Tracevv((stderr, "inflate:         distance %u\n", state->offset));
             state->mode = MATCH;
-
+            /* fallthrough */
         case MATCH:
             /* copy match from window to output */
             if (left == 0)
@@ -1025,7 +1025,7 @@ int32_t Z_EXPORT PREFIX(inflate)(PREFIX3(stream) *strm, int32_t flush) {
             }
 #ifdef GUNZIP
             state->mode = LENGTH;
-
+            /* fallthrough */
         case LENGTH:
             if (state->wrap && state->flags) {
                 NEEDBITS(32);
@@ -1038,7 +1038,7 @@ int32_t Z_EXPORT PREFIX(inflate)(PREFIX3(stream) *strm, int32_t flush) {
             }
 #endif
             state->mode = DONE;
-
+            /* fallthrough */
         case DONE:
             /* inflate stream terminated properly */
             ret = Z_STREAM_END;
@@ -1052,7 +1052,7 @@ int32_t Z_EXPORT PREFIX(inflate)(PREFIX3(stream) *strm, int32_t flush) {
             return Z_MEM_ERROR;
 
         case SYNC:
-
+            /* fallthrough */
         default:                 /* can't happen, but makes compilers happy */
             return Z_STREAM_ERROR;
         }
