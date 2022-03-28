@@ -1,4 +1,4 @@
-<abi-corpus path='btmp1/libz.so.1.2.12' architecture='elf-amd-x86_64' soname='libz.so.1'>
+<abi-corpus path='btmp1/libz.so.1.2.12.1' architecture='elf-amd-x86_64' soname='libz.so.1'>
   <elf-needed>
     <dependency name='libc.so.6'/>
   </elf-needed>

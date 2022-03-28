@@ -54,7 +54,7 @@
 #include "deflate_p.h"
 #include "functable.h"
 
-const char PREFIX(deflate_copyright)[] = " deflate 1.2.12.f Copyright (C) 1995-2022 Jean-loup Gailly and Mark Adler ";
+const char PREFIX(deflate_copyright)[] = " deflate 1.2.12.1.f Copyright (C) 1995-2022 Jean-loup Gailly and Mark Adler ";
 /*
   If you use the zlib library in a product, an acknowledgment is welcome
   in the documentation of your product. If for some reason you cannot

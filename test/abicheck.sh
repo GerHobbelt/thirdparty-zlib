@@ -67,9 +67,9 @@ done
 # Choose reference repo and commit
 if test "$suffix" = ""
 then
-  # Reference is zlib 1.2.12
+  # Reference is zlib 1.2.12.1
   ABI_GIT_REPO=https://github.com/madler/zlib.git
-  ABI_GIT_COMMIT=v1.2.12
+  ABI_GIT_COMMIT=v1.2.12.1
 else
   # Reference should be the tag for zlib-ng 2.0
   # but until that bright, shining day, use some
