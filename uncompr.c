@@ -5,11 +5,6 @@
 
 #include "zbuild.h"
 #include "zutil.h"
-#ifdef ZLIB_COMPAT
-#  include "zlib.h"
-#else
-#  include "zlib-ng.h"
-#endif
 
 /* ===========================================================================
      Decompresses the source buffer into the destination buffer.  *sourceLen is
