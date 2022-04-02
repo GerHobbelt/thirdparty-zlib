@@ -86,6 +86,7 @@ mandir=${mandir-'${prefix}/share/man'}
 shared_ext='.so'
 shared=1
 gzfileops=1
+unalignedok=1
 compat=0
 cover=0
 build32=0
@@ -162,7 +163,8 @@ case "$1" in
       echo '    [--warn]                    Enables extra compiler warnings' | tee -a configure.log
       echo '    [--debug]                   Enables extra debug prints during operation' | tee -a configure.log
       echo '    [--zlib-compat]             Compiles for zlib-compatible API instead of zlib-ng API' | tee -a configure.log
-      echo '    [--without-gzfileops]       Compiles with the gzfile parts of the API enabled' | tee -a configure.log
+      echo '    [--without-unaligned]       Compiles without fast unaligned access' | tee -a configure.log
+      echo '    [--without-gzfileops]       Compiles without the gzfile parts of the API enabled' | tee -a configure.log
       echo '    [--without-optimizations]   Compiles without support for optional instruction sets' | tee -a configure.log
       echo '    [--without-new-strategies]  Compiles without using new additional deflate strategies' | tee -a configure.log
       echo '    [--without-acle]            Compiles without ARM C Language Extensions' | tee -a configure.log
@@ -194,6 +196,7 @@ case "$1" in
     -s* | --shared | --enable-shared) shared=1; shift ;;
     -t | --static) shared=0; shift ;;
     --zlib-compat) compat=1; shift ;;
+    --without-unaligned) unalignedok=0; shift ;;
     --without-gzfileops) gzfileops=0; shift ;;
     --cover) cover=1; shift ;;
     -3* | --32) build32=1; shift ;;
@@ -920,6 +923,13 @@ else
   PIC_TESTOBJG="\$(OBJG)"
 fi
 
+# set architecture alignment requirements
+if test $unalignedok -eq 0; then
+  CFLAGS="${CFLAGS} -DNO_UANLIGNED"
+  SFLAGS="${SFLAGS} -DNO_UNALIGNED"
+  echo "Unaligned reads manually disabled." | tee -a configure.log
+fi
+
 # enable reduced memory configuration
 if test $reducedmem -eq 1; then
   echo "Configuring for reduced memory environment." | tee -a configure.log
@@ -1560,9 +1570,6 @@ case "${ARCH}" in
     i386 | i486 | i586 | i686 |x86_64)
         ARCHDIR=arch/x86
 
-        CFLAGS="${CFLAGS} -DUNALIGNED_OK -DUNALIGNED64_OK"
-        SFLAGS="${SFLAGS} -DUNALIGNED_OK -DUNALIGNED64_OK"
-
         # Enable arch-specific optimizations
         if test $without_optimizations -eq 0; then
             CFLAGS="${CFLAGS} -DX86_FEATURES"
@@ -1783,9 +1790,6 @@ EOF
                 fi
             ;;
             armv6l | armv6hl)
-                CFLAGS="${CFLAGS} -DUNALIGNED_OK"
-                SFLAGS="${SFLAGS} -DUNALIGNED_OK"
-
                 if test $without_optimizations -eq 0; then
                     if test $buildacle -eq 1; then
                         echo ACLE support not available
@@ -1797,9 +1801,6 @@ EOF
                 fi
             ;;
             arm | armv7*)
-                CFLAGS="${CFLAGS} -DUNALIGNED_OK"
-                SFLAGS="${SFLAGS} -DUNALIGNED_OK"
-
                 if test $without_optimizations -eq 0; then
                     if test $buildacle -eq 1; then
                         echo ACLE support not available
@@ -1824,9 +1825,6 @@ EOF
                 fi
             ;;
             armv8-a | armv8-a+simd)
-                CFLAGS="${CFLAGS} -DUNALIGNED_OK -DUNALIGNED64_OK"
-                SFLAGS="${SFLAGS} -DUNALIGNED_OK -DUNALIGNED64_OK"
-
                 if test $without_optimizations -eq 0; then
                     if test $buildacle -eq 1; then
                         echo ACLE support not available
@@ -1851,9 +1849,6 @@ EOF
                 fi
             ;;
             armv8-a+crc | armv8-a+crc+simd | armv8.[1234]-a | armv8.[1234]-a+simd)
-                CFLAGS="${CFLAGS} -DUNALIGNED_OK -DUNALIGNED64_OK"
-                SFLAGS="${SFLAGS} -DUNALIGNED_OK -DUNALIGNED64_OK"
-
                 acleflag="-march=${ARCH}"
 
                 if test $without_optimizations -eq 0; then
@@ -1948,9 +1943,6 @@ EOF
 
         neonflag="-march=${ARCH}"
         acleflag="-march=${ARCH}"
-
-        CFLAGS="${CFLAGS} -DUNALIGNED_OK -DUNALIGNED64_OK"
-        SFLAGS="${SFLAGS} -DUNALIGNED_OK -DUNALIGNED64_OK"
     ;;
     powerpc*)
         case "${ARCH}" in
@@ -1962,8 +1954,6 @@ EOF
             ;;
             powerpc64le)
                 [ ! -z $CROSS_PREFIX ] && QEMU_ARCH=ppc64le
-                CFLAGS="${CFLAGS} -DUNALIGNED_OK -DUNALIGNED64_OK"
-                SFLAGS="${SFLAGS} -DUNALIGNED_OK -DUNALIGNED64_OK"
             ;;
         esac
 
