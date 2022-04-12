@@ -1252,33 +1252,7 @@ if(ZLIB_ENABLE_TESTS)
         -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/run-and-compare.cmake)
 
     if(WITH_FUZZERS)
-        if(CMAKE_C_COMPILER_ID MATCHES "Clang")
-            enable_language(CXX)
-
-            if(DEFINED ENV{LIB_FUZZING_ENGINE})
-                set(FUZZING_ENGINE $ENV{LIB_FUZZING_ENGINE})
-                set(FUZZING_ENGINE_FOUND ON)
-            else()
-                find_library(FUZZING_ENGINE "FuzzingEngine")
-            endif()
-        endif()
-
-        set(FUZZERS checksum compress example_small example_large example_flush example_dict minigzip)
-        file(GLOB ALL_SRC_FILES "${CMAKE_CURRENT_SOURCE_DIR}/*")
-        foreach(FUZZER ${FUZZERS})
-            set(FUZZER_SRCS test/fuzz/fuzzer_${FUZZER}.c)
-            if(NOT FUZZING_ENGINE_FOUND)
-                list(APPEND FUZZER_SRCS test/fuzz/standalone_fuzz_target_runner.c)
-            endif()
-            add_executable(fuzzer_${FUZZER} ${FUZZER_SRCS})
-            configure_test_executable(fuzzer_${FUZZER})
-            target_link_libraries(fuzzer_${FUZZER} zlib)
-            if(FUZZING_ENGINE_FOUND)
-                target_link_libraries(fuzzer_${FUZZER} ${FUZZING_ENGINE})
-            endif()
-            set(FUZZER_COMMAND ${CMAKE_CROSSCOMPILING_EMULATOR} $<TARGET_FILE:fuzzer_${FUZZER}> ${ALL_SRC_FILES})
-            add_test(NAME fuzzer_${FUZZER} COMMAND ${FUZZER_COMMAND})
-        endforeach()
+        add_subdirectory(test/fuzz)
     endif()
 
     macro(test_minigzip name path)
@@ -1351,6 +1325,27 @@ if(ZLIB_ENABLE_TESTS)
             -DINPUT=${CMAKE_CURRENT_SOURCE_DIR}/test/${CVE}/test.gz
             "-DSUCCESS_EXIT=0;1"
             -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/run-and-redirect.cmake)
+    endforeach()
+
+    set(TEST_LEVELS 6 1 2)
+    foreach(TEST_LEVEL ${TEST_LEVELS})
+        add_test(NAME CVE-2018-25032-fixed-level-${TEST_LEVEL}
+            COMMAND ${CMAKE_COMMAND}
+            "-DTARGET=${MINIDEFLATE_COMMAND}"
+            "-DCOMPRESS_ARGS=-c;-k;-m;1;-w;-15;-s;4;-F;-${TEST_LEVEL}"
+            "-DDECOMPRESS_ARGS=-c;-k;-d;-m;1;-w;-15;-${TEST_LEVEL}"
+            -DGZIP_VERIFY=OFF
+            -DINPUT=${CMAKE_CURRENT_SOURCE_DIR}/test/CVE-2018-25032/fixed.txt
+            -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/test-compress.cmake)
+
+        add_test(NAME CVE-2018-25032-default-level-${TEST_LEVEL}
+            COMMAND ${CMAKE_COMMAND}
+            "-DTARGET=${MINIDEFLATE_COMMAND}"
+            "-DCOMPRESS_ARGS=-c;-k;-m;1;-w;-15;-s;4;-${TEST_LEVEL}"
+            "-DDECOMPRESS_ARGS=-c;-k;-d;-m;1;-w;-15;-${TEST_LEVEL}"
+            -DGZIP_VERIFY=OFF
+            -DINPUT=${CMAKE_CURRENT_SOURCE_DIR}/test/CVE-2018-25032/default.txt
+            -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/test-compress.cmake)
     endforeach()
 
     # Run tests targeting tools

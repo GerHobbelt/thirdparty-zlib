@@ -269,6 +269,8 @@ int main(int argc, const char** argv)
             keep = 1;
         else if (strcmp(argv[i], "-f") == 0)
             strategy = Z_FILTERED;
+        else if (strcmp(argv[i], "-F") == 0)
+            strategy = Z_FIXED;
         else if (strcmp(argv[i], "-h") == 0)
             strategy = Z_HUFFMAN_ONLY;
         else if (strcmp(argv[i], "-R") == 0)
@@ -327,7 +329,7 @@ int main(int argc, const char** argv)
             free(out_file);
         }
     }
-    
+
     if (window_bits == INT32_MAX) {
         window_bits = MAX_WBITS;
         /* Auto-detect wrapper for inflateInit */
