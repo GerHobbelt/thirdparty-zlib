@@ -1,7 +1,7 @@
 #include "../../zbuild.h"
 #include "../../zutil.h"
 
-#if defined(__linux__)
+#if defined(__linux__) && defined(HAVE_SYS_AUXV_H)
 #  include <sys/auxv.h>
 #  ifdef ARM_ASM_HWCAP
 #    include <asm/hwcap.h>
