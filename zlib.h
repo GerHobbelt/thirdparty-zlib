@@ -1870,7 +1870,7 @@ ZEXTERN int ZEXPORT gzgetc_ OF((gzFile file));  /* backward compatibility */
 #    define il2cpp_z_gzoffset il2cpp_z_gzoffset64
 #    define il2cpp_z_adler32_combine il2cpp_z_adler32_combine64
 #    define il2cpp_z_crc32_combine il2cpp_z_crc32_combine64
-#    define il2cpp_z_crc32_combine_gen z_crc32_combine_gen64
+#    define il2cpp_z_crc32_combine_gen il2cpp_z_crc32_combine_gen64
 #  else
 #    define gzopen gzopen64
 #    define gzseek gzseek64
