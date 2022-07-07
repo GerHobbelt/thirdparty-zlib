@@ -671,7 +671,7 @@ unsigned long Z_EXPORT PREFIX(deflateBound)(PREFIX3(stream) *strm, unsigned long
  * applications may wish to modify it to avoid allocating a large
  * strm->next_out buffer and copying into it. (See also read_buf()).
  */
-Z_INTERNAL void flush_pending(PREFIX3(stream) *strm) {
+Z_INTERNAL void PREFIX(flush_pending)(PREFIX3(stream) *strm) {
     uint32_t len;
     deflate_state *s = strm->state;
 
@@ -724,7 +724,7 @@ int32_t Z_EXPORT PREFIX(deflate)(PREFIX3(stream) *strm, int32_t flush) {
 
     /* Flush as much pending output as possible */
     if (s->pending != 0) {
-        flush_pending(strm);
+        PREFIX(flush_pending)(strm);
         if (strm->avail_out == 0) {
             /* Since avail_out is 0, deflate will be called again with
              * more output space, but possibly with both pending and
@@ -779,7 +779,7 @@ int32_t Z_EXPORT PREFIX(deflate)(PREFIX3(stream) *strm, int32_t flush) {
         s->status = BUSY_STATE;
 
         /* Compression must start with an empty pending buffer */
-        flush_pending(strm);
+        PREFIX(flush_pending)(strm);
         if (s->pending != 0) {
             s->last_flush = -1;
             return Z_OK;
@@ -801,7 +801,7 @@ int32_t Z_EXPORT PREFIX(deflate)(PREFIX3(stream) *strm, int32_t flush) {
             s->status = BUSY_STATE;
 
             /* Compression must start with an empty pending buffer */
-            flush_pending(strm);
+            PREFIX(flush_pending)(strm);
             if (s->pending != 0) {
                 s->last_flush = -1;
                 return Z_OK;
@@ -835,7 +835,7 @@ int32_t Z_EXPORT PREFIX(deflate)(PREFIX3(stream) *strm, int32_t flush) {
                 s->pending = s->pending_buf_size;
                 HCRC_UPDATE(beg);
                 s->gzindex += copy;
-                flush_pending(strm);
+                PREFIX(flush_pending)(strm);
                 if (s->pending != 0) {
                     s->last_flush = -1;
                     return Z_OK;
@@ -858,7 +858,7 @@ int32_t Z_EXPORT PREFIX(deflate)(PREFIX3(stream) *strm, int32_t flush) {
             do {
                 if (s->pending == s->pending_buf_size) {
                     HCRC_UPDATE(beg);
-                    flush_pending(strm);
+                    PREFIX(flush_pending)(strm);
                     if (s->pending != 0) {
                         s->last_flush = -1;
                         return Z_OK;
@@ -881,7 +881,7 @@ int32_t Z_EXPORT PREFIX(deflate)(PREFIX3(stream) *strm, int32_t flush) {
             do {
                 if (s->pending == s->pending_buf_size) {
                     HCRC_UPDATE(beg);
-                    flush_pending(strm);
+                    PREFIX(flush_pending)(strm);
                     if (s->pending != 0) {
                         s->last_flush = -1;
                         return Z_OK;
@@ -898,7 +898,7 @@ int32_t Z_EXPORT PREFIX(deflate)(PREFIX3(stream) *strm, int32_t flush) {
     if (s->status == HCRC_STATE) {
         if (s->gzhead->hcrc) {
             if (s->pending + 2 > s->pending_buf_size) {
-                flush_pending(strm);
+                PREFIX(flush_pending)(strm);
                 if (s->pending != 0) {
                     s->last_flush = -1;
                     return Z_OK;
@@ -910,7 +910,7 @@ int32_t Z_EXPORT PREFIX(deflate)(PREFIX3(stream) *strm, int32_t flush) {
         s->status = BUSY_STATE;
 
         /* Compression must start with an empty pending buffer */
-        flush_pending(strm);
+        PREFIX(flush_pending)(strm);
         if (s->pending != 0) {
             s->last_flush = -1;
             return Z_OK;
@@ -962,7 +962,7 @@ int32_t Z_EXPORT PREFIX(deflate)(PREFIX3(stream) *strm, int32_t flush) {
                     }
                 }
             }
-            flush_pending(strm);
+            PREFIX(flush_pending)(strm);
             if (strm->avail_out == 0) {
                 s->last_flush = -1; /* avoid BUF_ERROR at next call, see above */
                 return Z_OK;
@@ -984,7 +984,7 @@ int32_t Z_EXPORT PREFIX(deflate)(PREFIX3(stream) *strm, int32_t flush) {
 #endif
     if (s->wrap == 1)
         put_uint32_msb(s, strm->adler);
-    flush_pending(strm);
+    PREFIX(flush_pending)(strm);
     /* If avail_out is zero, the application will call deflate again
      * to flush the rest.
      */
