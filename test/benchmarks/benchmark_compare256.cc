@@ -76,3 +76,9 @@ BENCHMARK_COMPARE256(sse2, compare256_sse2, x86_cpu_has_sse2);
 #if defined(X86_AVX2) && defined(HAVE_BUILTIN_CTZ)
 BENCHMARK_COMPARE256(avx2, compare256_avx2, x86_cpu_has_avx2);
 #endif
+#if defined(ARM_NEON) && defined(HAVE_BUILTIN_CTZLL)
+BENCHMARK_COMPARE256(neon, compare256_neon, arm_cpu_has_neon);
+#endif
+#ifdef POWER9
+BENCHMARK_COMPARE256(power9, compare256_power9, power_cpu_has_arch_3_00);
+#endif
