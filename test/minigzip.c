@@ -223,8 +223,8 @@ static void file_compress(const char *file, const char *mode, int keep) {
  */
 static void file_uncompress(const char *file, int keep) {
     char buf[MAX_NAME_LEN];
-	const char* infile;
-	const char* outfile;
+    const char* infile;
+    const char* outfile;
     FILE *out;
     gzFile in;
     size_t len = strlen(file);
@@ -288,11 +288,11 @@ int main(int argc, const char** argv)
     int keep = 0;
     int i = 0;
     gzFile file;
-	const char* bname;
-	char outmode[20];
-	const char *strategy = "";
-	const char *level = "6";
-	const char *type = "b";
+    const char* bname;
+    char outmode[20];
+    const char *strategy = "";
+    const char *level = "6";
+    const char *type = "b";
 
     prog = argv[i];
     bname = strrchr(argv[i], '/');
@@ -390,8 +390,8 @@ int main(int argc, const char** argv)
 
 int main(int argc, const char** argv)
 {
-	fprintf(stderr, "tool is not supported in this zlib build.\n");
-	return 1;
+    fprintf(stderr, "tool is not supported in this zlib build.\n");
+    return 1;
 }
 
 #endif

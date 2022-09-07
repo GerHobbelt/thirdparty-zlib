@@ -234,7 +234,7 @@ int32_t ZNG_CONDEXPORT PREFIX(deflateInit2)(PREFIX3(stream) *strm, int32_t level
     s = ZALLOC_DEFLATE_STATE(strm);
     if (s == NULL)
         return Z_MEM_ERROR;
-	memset(s, 0, sizeof(*s));
+    memset(s, 0, sizeof(*s));
     strm->state = (struct internal_state *)s;
     s->strm = strm;
     s->status = INIT_STATE;     /* to pass state test in deflateReset() */
@@ -1059,7 +1059,7 @@ int32_t Z_EXPORT PREFIX(deflateCopy)(PREFIX3(stream) *dest, PREFIX3(stream) *sou
     ds = ZALLOC_DEFLATE_STATE(dest);
     if (ds == NULL)
         return Z_MEM_ERROR;
-	memset(ds, 0, sizeof(*ds));
+    memset(ds, 0, sizeof(*ds));
     dest->state = (struct internal_state *) ds;
     ZCOPY_DEFLATE_STATE(ds, ss);
     ds->strm = dest;

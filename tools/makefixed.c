@@ -93,6 +93,6 @@ static void makefixed(void) {
 
 int main(void)
 {
-	makefixed();
+    makefixed();
     return 0;
 }

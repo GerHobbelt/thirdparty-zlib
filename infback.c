@@ -48,7 +48,7 @@ int32_t ZNG_CONDEXPORT PREFIX(inflateBackInit)(PREFIX3(stream) *strm, int32_t wi
     if (state == NULL)
         return Z_MEM_ERROR;
     Tracev((stderr, "inflate: allocated\n"));
-	memset(state, 0, sizeof(*state));
+    memset(state, 0, sizeof(*state));
     strm->state = (struct internal_state *)state;
     state->dmax = 32768U;
     state->wbits = (unsigned int)windowBits;
