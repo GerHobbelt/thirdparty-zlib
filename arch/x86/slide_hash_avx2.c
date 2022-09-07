@@ -13,7 +13,7 @@
 #include "../../zutil.h"
 #include "../../deflate.h"
 
-#ifdef __AVX__
+#if defined(__AVX__) || defined(X86_AVX2)
 
 #include <immintrin.h>
 

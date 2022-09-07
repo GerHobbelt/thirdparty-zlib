@@ -1,6 +1,6 @@
 /* test_compress_dual.cc - Test linking against both zlib and zlib-ng */
 
-#include "zlib.h"
+#include "zlib-ng.h"
 
 #include <stdio.h>
 #include <stdint.h>

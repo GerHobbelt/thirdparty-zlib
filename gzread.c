@@ -4,7 +4,6 @@
  */
 
 #include "zbuild.h"
-#include "zutil.h"
 #include "zutil_p.h"
 #include "gzguts.h"
 
@@ -398,11 +397,11 @@ size_t Z_EXPORT PREFIX(gzfread)(void *buf, size_t size, size_t nitems, gzFile fi
         return 0;
 
     /* compute bytes to read -- error on overflow */
-    len = nitems * size;
-    if (size && len / size != nitems) {
+    if (size && SIZE_MAX / size < nitems) {
         gz_error(state, Z_STREAM_ERROR, "request does not fit in a size_t");
         return 0;
     }
+    len = nitems * size;
 
     /* read len or fewer bytes to buf, return the number of full items read */
     return len ? gz_read(state, buf, len) / size : 0;
@@ -435,9 +434,11 @@ int Z_EXPORT PREFIX(gzgetc)(gzFile file) {
     return gz_read(state, buf, 1) < 1 ? -1 : buf[0];
 }
 
+#ifdef ZLIB_COMPAT
 int Z_EXPORT PREFIX(gzgetc_)(gzFile file) {
     return PREFIX(gzgetc)(file);
 }
+#endif
 
 /* -- see zlib.h -- */
 int Z_EXPORT PREFIX(gzungetc)(int c, gzFile file) {
