@@ -1,7 +1,7 @@
-name: CI Pigz
+name: Pigz
 on: [push, pull_request]
 jobs:
-  ci-cmake:
+  pigz:
     name: ${{ matrix.name }}
     runs-on: ${{ matrix.os }}
     strategy:
@@ -51,10 +51,10 @@ jobs:
 
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
 
     - name: Checkout test corpora
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
       with:
         repository: zlib-ng/corpora
         path: test/data/corpora
@@ -67,8 +67,13 @@ jobs:
 
     - name: Generate project files
       run: |
-        cd test/pigz
-        cmake ${{ matrix.cmake-args }} -DCMAKE_BUILD_TYPE=${{ matrix.build-config || 'Release' }} -DBUILD_SHARED_LIBS=OFF -DZLIB_ROOT=../.. -DWITH_CODE_COVERAGE=ON -DWITH_MAINTAINER_WARNINGS=ON
+        cmake ${{ matrix.cmake-args }} \
+          -DCMAKE_BUILD_TYPE=${{ matrix.build-config || 'Release' }} \
+          -DBUILD_SHARED_LIBS=OFF \
+          -DZLIB_ROOT=../.. \
+          -DWITH_CODE_COVERAGE=ON \
+          -DWITH_MAINTAINER_WARNINGS=ON
+      working-directory: test/pigz
       env:
         CC: ${{ matrix.compiler }}
         CFLAGS: ${{ matrix.cflags }}
@@ -76,20 +81,22 @@ jobs:
         CI: true
 
     - name: Compile source code
-      run: |
-        cd test/pigz
-        cmake --build . --config ${{ matrix.build-config || 'Release' }}
+      run: cmake --build . --config ${{ matrix.build-config || 'Release' }}
+      working-directory: test/pigz
 
     - name: Run test cases
-      run: |
-        cd test/pigz
-        ctest --verbose -C Release --output-on-failure --max-width 120 -j ${{ matrix.parallels-jobs || '2' }}
+      run: ctest --verbose -C Release --output-on-failure --max-width 120 -j ${{ matrix.parallels-jobs || '2' }}
+      working-directory: test/pigz
 
     - name: Generate coverage report
       if: matrix.codecov
       run: |
         python3 -u -m pip install --user gcovr==5.0
-        python3 -m gcovr --exclude-unreachable-branches --gcov-executable "${{ matrix.gcov-exec || 'gcov' }}" --root . --xml --output coverage.xml -j 3 --verbose
+        python3 -m gcovr -j 3 --verbose \
+          --exclude-unreachable-branches \
+          --gcov-executable "${{ matrix.gcov-exec || 'gcov' }}" \
+          --root . \
+          --xml --output coverage.xml
 
     - name: Upload coverage report
       uses: codecov/codecov-action@v2

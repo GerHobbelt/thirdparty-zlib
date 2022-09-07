@@ -1,7 +1,7 @@
-name: CI Pkgcheck
+name: Package Check
 on: [push, pull_request]
 jobs:
-  ci-pkgcheck:
+  pkgcheck:
     name: ${{ matrix.name }}
     runs-on: ${{ matrix.os }}
     strategy:
@@ -76,18 +76,20 @@ jobs:
 
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
 
     - name: Install packages (Ubuntu)
       if: runner.os == 'Linux'
       run: |
         sudo apt-get update
-        sudo apt-get install -y --no-install-recommends abigail-tools ninja-build diffoscope ${{ matrix.packages }}
+        sudo apt-get install -y --no-install-recommends ${{ matrix.packages }} \
+          abigail-tools \
+          diffoscope \
+          ninja-build
 
     - name: Install packages (macOS)
       if: runner.os == 'macOS'
-      run: |
-        brew install ninja diffoscope ${{ matrix.packages }}
+      run: brew install ninja diffoscope ${{ matrix.packages }}
       env:
         HOMEBREW_NO_INSTALL_CLEANUP: 1
 
@@ -101,8 +103,7 @@ jobs:
         xcode-version: '11.7.0'
 
     - name: Compare builds
-      run: |
-        sh test/pkgcheck.sh
+      run: sh test/pkgcheck.sh
       env:
         CC: ${{ matrix.compiler }}
         CXX: ${{ matrix.cxx-compiler }}
@@ -114,8 +115,7 @@ jobs:
         LDFLAGS: ${{ matrix.ldflags }}
 
     - name: Compare builds (compat)
-      run: |
-        sh test/pkgcheck.sh --zlib-compat
+      run: sh test/pkgcheck.sh --zlib-compat
       env:
         CC: ${{ matrix.compiler }}
         CFLAGS: ${{ matrix.cflags }}
@@ -127,8 +127,7 @@ jobs:
     - name: Check ABI
       # macOS runner does not contain abigail
       if: runner.os != 'macOS'
-      run: |
-        sh test/abicheck.sh --refresh-if
+      run: sh test/abicheck.sh --refresh-if
       env:
         CC: ${{ matrix.compiler }}
         CXX: ${{ matrix.cxx-compiler }}
@@ -142,8 +141,7 @@ jobs:
     - name: Check ABI (compat)
       # macOS runner does not contain abigail
       if: runner.os != 'macOS'
-      run: |
-        sh test/abicheck.sh --zlib-compat --refresh-if
+      run: sh test/abicheck.sh --zlib-compat --refresh-if
       env:
         CC: ${{ matrix.compiler }}
         CXX: ${{ matrix.cxx-compiler }}
@@ -160,6 +158,7 @@ jobs:
       with:
         name: ${{ matrix.name }}
         path: |
+          **/*.abi
           btmp1/configure.log
           btmp1/CMakeFiles/CMakeOutput.log
           btmp1/CMakeFiles/CMakeError.log

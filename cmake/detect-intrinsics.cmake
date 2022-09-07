@@ -2,8 +2,12 @@
 # Licensed under the Zlib license, see LICENSE.md for details
 
 macro(check_acle_compiler_flag)
-    if(NOT NATIVEFLAG AND NOT HAVE_ACLE_FLAG)
-        set(ACLEFLAG "-march=armv8-a+crc" CACHE INTERNAL "Compiler option to enable ACLE support")
+    if(CMAKE_C_COMPILER_ID MATCHES "GNU" OR CMAKE_C_COMPILER_ID MATCHES "Clang")
+        if(NOT NATIVEFLAG AND NOT HAVE_ACLE_FLAG)
+            set(ACLEFLAG "-march=armv8-a+crc" CACHE INTERNAL "Compiler option to enable ACLE support")
+        endif()
+    elseif(MSVC)
+        set(HAVE_ACLE_FLAG TRUE)
     endif()
     # Check whether compiler supports ACLE flag
     set(CMAKE_REQUIRED_FLAGS "${ACLEFLAG} ${NATIVEFLAG}")
@@ -152,7 +156,12 @@ macro(check_neon_compiler_flag)
     # Check whether compiler supports NEON flag
     set(CMAKE_REQUIRED_FLAGS "${NEONFLAG} ${NATIVEFLAG}")
     check_c_source_compiles(
-        "int main() { return 0; }"
+        "#ifdef _M_ARM64
+        #  include <arm64_neon.h>
+        #else
+        #  include <arm_neon.h>
+        #endif
+        int main() { return 0; }"
         MFPU_NEON_AVAILABLE FAIL_REGEX "not supported")
     set(CMAKE_REQUIRED_FLAGS)
 endmacro()

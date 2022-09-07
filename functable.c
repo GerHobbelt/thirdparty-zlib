@@ -166,7 +166,7 @@ Z_INTERNAL uint32_t longest_match_slow_stub(deflate_state *const s, Pos cur_matc
     return functable.longest_match_slow(s, cur_match);
 }
 
-Z_INTERNAL uint32_t adler32_stub(uint32_t adler, const unsigned char *buf, size_t len) {
+Z_INTERNAL uint32_t adler32_stub(uint32_t adler, const uint8_t *buf, uint64_t len) {
     // Initialize default
     functable.adler32 = &adler32_c;
     cpu_check_features();
@@ -206,7 +206,7 @@ Z_INTERNAL uint32_t adler32_stub(uint32_t adler, const unsigned char *buf, size_
     return functable.adler32(adler, buf, len);
 }
 
-Z_INTERNAL uint32_t adler32_fold_copy_stub(uint32_t adler, uint8_t *dst, const uint8_t *src, size_t len) {
+Z_INTERNAL uint32_t adler32_fold_copy_stub(uint32_t adler, uint8_t *dst, const uint8_t *src, uint64_t len) {
     functable.adler32_fold_copy = &adler32_fold_copy_c;
 #if (defined X86_SSE42_ADLER32)
     if (x86_cpu_has_sse42)
@@ -232,22 +232,22 @@ Z_INTERNAL uint32_t crc32_fold_reset_stub(crc32_fold *crc) {
     cpu_check_features();
 #ifdef X86_PCLMULQDQ_CRC
     if (x86_cpu_has_pclmulqdq)
-        functable.crc32_fold_reset = &crc32_fold_reset_pclmulqdq;
+        functable.crc32_fold_reset = &crc32_fold_pclmulqdq_reset;
 #endif
     return functable.crc32_fold_reset(crc);
 }
 
-Z_INTERNAL void crc32_fold_copy_stub(crc32_fold *crc, uint8_t *dst, const uint8_t *src, size_t len) {
+Z_INTERNAL void crc32_fold_copy_stub(crc32_fold *crc, uint8_t *dst, const uint8_t *src, uint64_t len) {
     functable.crc32_fold_copy = &crc32_fold_copy_c;
     cpu_check_features();
 #ifdef X86_PCLMULQDQ_CRC
     if (x86_cpu_has_pclmulqdq)
-        functable.crc32_fold_copy = &crc32_fold_copy_pclmulqdq;
+        functable.crc32_fold_copy = &crc32_fold_pclmulqdq_copy;
 #endif
     functable.crc32_fold_copy(crc, dst, src, len);
 }
 
-Z_INTERNAL void crc32_fold_stub(crc32_fold *crc, const uint8_t *src, size_t len, uint32_t init_crc) {
+Z_INTERNAL void crc32_fold_stub(crc32_fold *crc, const uint8_t *src, uint64_t len, uint32_t init_crc) {
     functable.crc32_fold = &crc32_fold_c;
     cpu_check_features();
 #ifdef X86_PCLMULQDQ_CRC
@@ -262,7 +262,7 @@ Z_INTERNAL uint32_t crc32_fold_final_stub(crc32_fold *crc) {
     cpu_check_features();
 #ifdef X86_PCLMULQDQ_CRC
     if (x86_cpu_has_pclmulqdq)
-        functable.crc32_fold_final = &crc32_fold_final_pclmulqdq;
+        functable.crc32_fold_final = &crc32_fold_pclmulqdq_final;
 #endif
     return functable.crc32_fold_final(crc);
 }
@@ -411,7 +411,7 @@ Z_INTERNAL uint8_t* chunkmemset_safe_stub(uint8_t *out, unsigned dist, unsigned 
     return functable.chunkmemset_safe(out, dist, len, left);
 }
 
-Z_INTERNAL uint32_t crc32_stub(uint32_t crc, const unsigned char *buf, uint64_t len) {
+Z_INTERNAL uint32_t crc32_stub(uint32_t crc, const uint8_t *buf, uint64_t len) {
     Assert(sizeof(uint64_t) >= sizeof(size_t),
            "crc32_z takes size_t but internally we have a uint64_t len");
 

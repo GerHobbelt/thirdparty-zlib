@@ -369,7 +369,7 @@ if test "$gcc" -eq 1 && ($cc $CFLAGS -c $test.c) >> configure.log 2>&1; then
       else
         ARCH=native
       fi ;;
-    aarch64 | aarch64_be)
+    aarch64 | aarch64_be | arm64)
       if test "${uname}" = "elf"; then
         uname=aarch64
       fi
@@ -442,7 +442,6 @@ if test "$gcc" -eq 1 && ($cc $CFLAGS -c $test.c) >> configure.log 2>&1; then
         LDSHAREDLIBC=""
         DEFFILE='win32/${LIBNAME2}.def'
         RC="${CROSS_PREFIX}windres"
-        RCFLAGS='--define GCC_WINDRES'
         RCOBJS='zlibrc.o'
         STRIP="${CROSS_PREFIX}strip"
         EXE='.exe' ;;
@@ -465,7 +464,6 @@ if test "$gcc" -eq 1 && ($cc $CFLAGS -c $test.c) >> configure.log 2>&1; then
         LDSHAREDLIBC=""
         DEFFILE='win32/${LIBNAME2}.def'
         RC="${CROSS_PREFIX}windres"
-        RCFLAGS='--define GCC_WINDRES'
         RCOBJS='zlibrc.o'
         STRIP="${CROSS_PREFIX}strip"
         EXE='.exe' ;;
@@ -485,7 +483,6 @@ if test "$gcc" -eq 1 && ($cc $CFLAGS -c $test.c) >> configure.log 2>&1; then
         LDSHAREDLIBC=""
         DEFFILE='win32/${LIBNAME2}.def'
         RC="${CROSS_PREFIX}windres"
-        RCFLAGS='--define GCC_WINDRES'
         if [ "$CC" == "mingw32-gcc" ]; then
           case $ARCH in
           i386 | i486 | i586 | i686) RCFLAGS="${RCFLAGS} -F pe-i386";;
@@ -884,6 +881,7 @@ echo >> configure.log
 
 # Check for ANSI C compliant compiler
 cat > $test.c <<EOF
+#include <stdint.h>
 #include <stdio.h>
 #include <stdarg.h>
 #include "zconf${SUFFIX}.h"
@@ -1185,6 +1183,11 @@ EOF
 check_neon_compiler_flag() {
     # Check whether -mfpu=neon is available on ARM processors.
     cat > $test.c << EOF
+#ifdef _M_ARM64
+ #  include <arm64_neon.h>
+ #else
+ #  include <arm_neon.h>
+#endif
 int main() { return 0; }
 EOF
     if try $CC -c $CFLAGS -mfpu=neon $test.c; then
@@ -1198,7 +1201,7 @@ EOF
 
 check_neon_ld4_intrinsics() {
     if test $buildneon -eq 1 && test $native -eq 0; then
-        if test "$CC_ARCH" = "aarch64" || test "$CC_ARCH" = "aarch64_be"; then
+        if test "$CC_ARCH" = "aarch64" || test "$CC_ARCH" = "aarch64_be" || test "$CC_ARCH" = "arm64"; then
             neonflag="-march=armv8-a+simd"
         elif test $MFPU_NEON_AVAILABLE -eq 1; then
             neonflag="-mfpu=neon"

@@ -6,7 +6,7 @@
 
 #ifdef X86_AVX_CHUNKSET
 #include <immintrin.h>
-#include "chunk_permute_table.h"
+#include "../generic/chunk_permute_table.h"
 
 typedef __m256i chunk_t;
 
@@ -53,19 +53,19 @@ static const lut_rem_pair perm_idx_lut[29] = {
 
 static inline void chunkmemset_2(uint8_t *from, chunk_t *chunk) {
     int16_t tmp;
-    zmemcpy_2(&tmp, from);
+    memcpy(&tmp, from, sizeof(tmp));
     *chunk = _mm256_set1_epi16(tmp);
 }
 
 static inline void chunkmemset_4(uint8_t *from, chunk_t *chunk) {
     int32_t tmp;
-    zmemcpy_4(&tmp, from);
+    memcpy(&tmp, from, sizeof(tmp));
     *chunk = _mm256_set1_epi32(tmp);
 }
 
 static inline void chunkmemset_8(uint8_t *from, chunk_t *chunk) {
     int64_t tmp;
-    zmemcpy_8(&tmp, from);
+    memcpy(&tmp, from, sizeof(tmp));
     *chunk = _mm256_set1_epi64x(tmp);
 }
 
@@ -123,7 +123,6 @@ static inline chunk_t GET_CHUNK_MAG(uint8_t *buf, uint32_t *chunk_rem, uint32_t 
 
 #define CHUNKSIZE        chunksize_avx
 #define CHUNKCOPY        chunkcopy_avx
-#define CHUNKCOPY_SAFE   chunkcopy_safe_avx
 #define CHUNKUNROLL      chunkunroll_avx
 #define CHUNKMEMSET      chunkmemset_avx
 #define CHUNKMEMSET_SAFE chunkmemset_safe_avx

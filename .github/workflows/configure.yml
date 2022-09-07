@@ -1,7 +1,7 @@
-name: CI Configure
+name: Configure
 on: [push, pull_request]
 jobs:
-  ci-configure:
+  configure:
     name: ${{ matrix.name }}
     runs-on: ${{ matrix.os }}
     strategy:
@@ -178,22 +178,22 @@ jobs:
 
           - name: macOS GCC Symbol Prefix
             os: macOS-latest
-            compiler: gcc
+            compiler: gcc-9
             configure-args: --sprefix=zTest_
 
           - name: macOS GCC Symbol Prefix & Compat
             os: macOS-latest
-            compiler: gcc
+            compiler: gcc-9
             configure-args: --zlib-compat --sprefix=zTest_
 
           - name: macOS GCC
             os: macOS-latest
-            compiler: gcc
+            compiler: gcc-9
             configure-args: --warn
 
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
 
     - name: Install packages (Ubuntu)
       if: runner.os == 'Linux' && matrix.packages
@@ -214,19 +214,14 @@ jobs:
         CI: true
 
     - name: Compile source code
-      run: |
-        cd ${{ matrix.build-dir || '.' }}
-        make -j2
+      run: make -j2
+      working-directory: ${{ matrix.build-dir }}
 
     - name: Run test cases
-      run: |
-        cd ${{ matrix.build-dir || '.' }}
-        make test
+      run: make test
+      working-directory: ${{ matrix.build-dir }}
       env:
         QEMU_RUN: ${{ matrix.qemu-run }}
-        ASAN_OPTIONS: abort_on_error=1:halt_on_error=1
-        MSAN_OPTIONS: abort_on_error=1:halt_on_error=1
-        UBSAN_OPTIONS: print_stacktrace=1:abort_on_error=1:halt_on_error=1
 
     - name: Upload build errors
       uses: actions/upload-artifact@v2
