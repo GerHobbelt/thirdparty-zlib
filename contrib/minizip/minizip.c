@@ -47,7 +47,7 @@
 #define MAXFILENAME (256)
 
 #ifdef _WIN32
-uLong filetime(
+static int  filetime(
     const char *f,              /* name of file to get info on */
     tm_zip *tmzip,        /* return value: access, modific. and creation times */
     uLong *dt             /* dostime */  )
@@ -71,7 +71,7 @@ uLong filetime(
 }
 #else
 #if defined(unix) || defined(__APPLE__)
-uLong filetime(
+static int filetime(
     const char *f,               /* name of file to get info on */
     tm_zip *tmzip,         /* return value: access, modific. and creation times */
     uLong *dt              /* dostime */  )
@@ -85,7 +85,7 @@ uLong filetime(
   if (strcmp(f,"-")!=0)
   {
     char name[MAXFILENAME+1];
-    int len = strlen(f);
+    size_t len = strlen(f);
     if (len > MAXFILENAME)
       len = MAXFILENAME;
 
@@ -127,7 +127,7 @@ uLong filetime(
 
 
 
-int check_exist_file(
+static int check_exist_file(
     const char* filename)
 {
     FILE* ftestexist;
@@ -140,13 +140,13 @@ int check_exist_file(
     return ret;
 }
 
-void do_banner(void)
+static void do_banner(void)
 {
     printf("MiniZip 1.1, demo of zLib + MiniZip64 package, written by Gilles Vollant\n");
     printf("more info on MiniZip at http://www.winimage.com/zLibDll/minizip.html\n\n");
 }
 
-void do_help(void)
+static void do_help(void)
 {
     printf("Usage : minizip [-o] [-a] [-0 to -9] [-p password] [-j] file.zip [files_to_add]\n\n" \
            "  -o  Overwrite existing file.zip\n" \
@@ -159,7 +159,7 @@ void do_help(void)
 
 /* calculate the CRC32 of a file,
    because to encrypt a file, we need known the CRC32 of the file before */
-int getFileCrc(const char* filenameinzip, void*buf, unsigned long size_buf, unsigned long* result_crc)
+static int getFileCrc(const char* filenameinzip,void*buf,unsigned long size_buf,unsigned long* result_crc)
 {
    unsigned long calculate_crc=0;
    int err=ZIP_OK;
@@ -176,7 +176,7 @@ int getFileCrc(const char* filenameinzip, void*buf, unsigned long size_buf, unsi
         do
         {
             err = ZIP_OK;
-            size_read = (int)fread(buf,1,size_buf,fin);
+            size_read = fread(buf,1,size_buf,fin);
             if (size_read < size_buf)
                 if (feof(fin)==0)
             {
@@ -185,7 +185,7 @@ int getFileCrc(const char* filenameinzip, void*buf, unsigned long size_buf, unsi
             }
 
             if (size_read>0)
-                calculate_crc = crc32(calculate_crc,buf,size_read);
+                calculate_crc = crc32_z(calculate_crc,buf,size_read);
             total_read += size_read;
 
         } while ((err == ZIP_OK) && (size_read>0));
@@ -198,7 +198,7 @@ int getFileCrc(const char* filenameinzip, void*buf, unsigned long size_buf, unsi
     return err;
 }
 
-int isLargeFile(const char* filename)
+static int isLargeFile(const char* filename)
 {
   int largeFile = 0;
   ZPOS64_T pos = 0;
@@ -207,7 +207,7 @@ int isLargeFile(const char* filename)
   if(pFile != NULL)
   {
     FSEEKO_FUNC(pFile, 0, SEEK_END);
-    pos = FTELLO_FUNC(pFile);
+    pos = (ZPOS64_T)FTELLO_FUNC(pFile);
 
                 printf("File : %s is %lld bytes\n", filename, pos);
 
@@ -232,7 +232,7 @@ int main(
     char filename_try[MAXFILENAME+16];
     int zipok;
     int err=0;
-    int size_buf=0;
+    size_t size_buf=0;
     void* buf=NULL;
     const char* password=NULL;
 
@@ -373,7 +373,7 @@ int main(
                   (strlen(argv[i]) == 2)))
             {
                 FILE * fin;
-                int size_read;
+                size_t size_read;
                 const char* filenameinzip = argv[i];
                 const char *savefilenameinzip;
                 zip_fileinfo zi;
@@ -449,7 +449,7 @@ int main(
                     do
                     {
                         err = ZIP_OK;
-                        size_read = (int)fread(buf,1,size_buf,fin);
+                        size_read = fread(buf,1,size_buf,fin);
                         if (size_read < size_buf)
                             if (feof(fin)==0)
                         {
@@ -459,7 +459,7 @@ int main(
 
                         if (size_read>0)
                         {
-                            err = zipWriteInFileInZip (zf,buf,size_read);
+                            err = zipWriteInFileInZip (zf,buf,(unsigned)size_read);
                             if (err<0)
                             {
                                 printf("error in writing %s in the zipfile\n",
