@@ -61,8 +61,12 @@ public:
         /* Set all to NULL */
         memset(files, 0, sizeof(FILE*));
 
+		for (size_t i = 0; i < 10; ++i) {
+			inpng[i] ={NULL, 0, 0};
+		}
+
         for (size_t i = 0; i < 10; ++i) {
-            sprintf(test_fname, "test_pngs/%1lu.png", i);
+            sprintf(test_fname, "test_pngs/%zu.png", i);
             FILE *in_img = fopen(test_fname, "r");
             if (in_img == NULL) {
                 for (size_t j = 0; j < i; ++j) {
@@ -98,7 +102,7 @@ public:
 
             size_t bytes_read = fread(raw_file, 1, num_bytes, in_file);
             if (bytes_read != num_bytes) {
-                fprintf(stderr, "couldn't read all of the bytes for file test_pngs/%lu.png", i);
+                fprintf(stderr, "couldn't read all of the bytes for file test_pngs/%zu.png", i);
                 abort();
             }
 
