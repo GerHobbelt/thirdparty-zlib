@@ -3,7 +3,7 @@
  * For conditions of distribution and use, see copyright notice in zlib.h
  */
 
-#include <stdio.h>
+#include <cstdio>
 
 #include <benchmark/benchmark.h>
 
@@ -14,11 +14,11 @@ extern "C" {
 }
 #endif
 
-int main(int argc, char** argv) {
+
+int main(int argc, const char** argv) {
 #ifndef BUILD_ALT
     cpu_check_features();
 #endif
-
     ::benchmark::Initialize(&argc, argv);
     ::benchmark::RunSpecifiedBenchmarks();
 

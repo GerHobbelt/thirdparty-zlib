@@ -492,5 +492,5 @@ Z_INTERNAL Z_TLS struct functable_s functable = {
 Z_EXPORT
 void zng_lib_init(void)
 {
-	cpu_check_features();
+    cpu_check_features();
 }
