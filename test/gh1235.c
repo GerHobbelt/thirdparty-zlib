@@ -3,6 +3,10 @@
 #include <string.h>
 #include "zutil.h"
 
+#if defined(BUILD_MONOLITHIC)
+#define main      zlib_gh1235_test_main
+#endif
+
 int main(void) {
     unsigned char plain[32];
     unsigned char compressed[130];
