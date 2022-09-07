@@ -769,6 +769,9 @@ if(WITH_OPTIM)
             check_sse41_intrinsics()
             if(HAVE_SSE41_INTRIN)
                 add_definitions(-DX86_SSE41)
+                list(APPEND SSE41_SRCS ${ARCHDIR}/chunkset_sse41.c)
+                list(APPEND ZLIB_ARCH_SRCS ${SSE41_SRCS})
+                set_property(SOURCE ${SSE41_SRCS} PROPERTY COMPILE_FLAGS "${SSE41FLAG} ${NOLTOFLAG}")
             else()
                 set(WITH_SSE41 OFF)
             endif()
@@ -776,8 +779,8 @@ if(WITH_OPTIM)
         if(WITH_SSE42)
             check_sse42_intrinsics()
             if(HAVE_SSE42CRC_INLINE_ASM OR HAVE_SSE42CRC_INTRIN)
-                add_definitions(-DX86_SSE42_CRC_HASH)
-                set(SSE42_SRCS ${ARCHDIR}/insert_string_sse42.c)
+                add_definitions(-DX86_SSE42_CRC_HASH -DX86_SSE42_ADLER32)
+                set(SSE42_SRCS ${ARCHDIR}/adler32_sse42.c ${ARCHDIR}/insert_string_sse42.c)
                 add_feature_info(SSE42_CRC 1 "Support SSE4.2 optimized CRC hash generation, using \"${SSE42FLAG}\"")
                 list(APPEND ZLIB_ARCH_SRCS ${SSE42_SRCS})
                 set_property(SOURCE ${SSE42_SRCS} PROPERTY COMPILE_FLAGS "${SSE42FLAG} ${NOLTOFLAG}")
@@ -925,9 +928,9 @@ set(ZLIB_PRIVATE_HDRS
     adler32_p.h
     chunkset_tpl.h
     cpu_features.h
-    crc32_p.h
-    crc32_tbl.h
-    crc32_comb_tbl.h
+    crc32_braid_p.h
+    crc32_braid_comb_p.h
+    crc32_braid_tbl.h
     crc32_fold.h
     deflate.h
     deflate_p.h
@@ -948,12 +951,13 @@ set(ZLIB_PRIVATE_HDRS
 )
 set(ZLIB_SRCS
     adler32.c
+    adler32_fold.c
     chunkset.c
     compare256.c
     compress.c
     cpu_features.c
-    crc32.c
-    crc32_comb.c
+    crc32_braid.c
+    crc32_braid_comb.c
     crc32_fold.c
     deflate.c
     deflate_fast.c
@@ -1271,20 +1275,11 @@ if(ZLIB_ENABLE_TESTS)
         "$<INSTALL_INTERFACE:include>")
 
     set(MAKECRCT_COMMAND ${CMAKE_CROSSCOMPILING_EMULATOR} $<TARGET_FILE:makecrct>)
-    add_test(NAME makecrct-crc32
+    add_test(NAME makecrct
         COMMAND ${CMAKE_COMMAND}
         "-DCOMMAND=${MAKECRCT_COMMAND}"
-        -DOUTPUT=${CMAKE_CURRENT_BINARY_DIR}/Testing/Temporary/crc32_tbl._h
-        -DCOMPARE=${CMAKE_CURRENT_SOURCE_DIR}/crc32_tbl.h
-        -DIGNORE_LINE_ENDINGS=ON
-        -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/run-and-compare.cmake)
-
-    set(MAKECRCT_COMMAND ${CMAKE_CROSSCOMPILING_EMULATOR} $<TARGET_FILE:makecrct> -c)
-    add_test(NAME makecrct-crc32-combine
-        COMMAND ${CMAKE_COMMAND}
-        "-DCOMMAND=${MAKECRCT_COMMAND}"
-        -DOUTPUT=${CMAKE_CURRENT_BINARY_DIR}/Testing/Temporary/crc32_comb_tbl._h
-        -DCOMPARE=${CMAKE_CURRENT_SOURCE_DIR}/crc32_comb_tbl.h
+        -DOUTPUT=${CMAKE_CURRENT_BINARY_DIR}/Testing/Temporary/crc32_braid_tbl._h
+        -DCOMPARE=${CMAKE_CURRENT_SOURCE_DIR}/crc32_braid_tbl.h
         -DIGNORE_LINE_ENDINGS=ON
         -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/run-and-compare.cmake)
 

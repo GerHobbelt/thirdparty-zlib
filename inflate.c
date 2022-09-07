@@ -21,6 +21,7 @@ static uint32_t syncsearch(uint32_t *have, const unsigned char *buf, uint32_t le
 
 static inline void inf_chksum_cpy(PREFIX3(stream) *strm, uint8_t *dst,
                            const uint8_t *src, uint32_t copy) {
+    if (!copy) return;
     struct inflate_state *state = (struct inflate_state*)strm->state;
 #ifdef GUNZIP
     if (state->flags) {
@@ -28,8 +29,7 @@ static inline void inf_chksum_cpy(PREFIX3(stream) *strm, uint8_t *dst,
     } else
 #endif
     {
-        strm->adler = state->check = functable.adler32(state->check, src, copy);
-        memcpy(dst, src, copy);
+        strm->adler = state->check = functable.adler32_fold_copy(state->check, dst, src, copy);
     }
 }
 

@@ -6,7 +6,7 @@
 #include "zbuild.h"
 #include "zutil.h"
 #include "zendian.h"
-#include "crc32_p.h"
+#include "crc32_braid_p.h"
 #include "deflate.h"
 #include "deflate_p.h"
 #include "functable.h"
@@ -206,6 +206,27 @@ Z_INTERNAL uint32_t adler32_stub(uint32_t adler, const unsigned char *buf, size_
     return functable.adler32(adler, buf, len);
 }
 
+Z_INTERNAL uint32_t adler32_fold_copy_stub(uint32_t adler, uint8_t *dst, const uint8_t *src, size_t len) {
+    functable.adler32_fold_copy = &adler32_fold_copy_c;
+#if (defined X86_SSE42_ADLER32)
+    if (x86_cpu_has_sse42)
+        functable.adler32_fold_copy = &adler32_fold_copy_sse42;
+#endif
+#ifdef X86_AVX2_ADLER32
+    if (x86_cpu_has_avx2)
+        functable.adler32_fold_copy = &adler32_fold_copy_avx2;
+#endif
+#ifdef X86_AVX512_ADLER32
+    if (x86_cpu_has_avx512)
+        functable.adler32_fold_copy = &adler32_fold_copy_avx512;
+#endif
+#ifdef X86_AVX512VNNI_ADLER32
+    if (x86_cpu_has_avx512vnni)
+        functable.adler32_fold_copy = &adler32_fold_copy_avx512_vnni;
+#endif
+    return functable.adler32_fold_copy(adler, dst, src, len);
+}
+
 Z_INTERNAL uint32_t crc32_fold_reset_stub(crc32_fold *crc) {
     functable.crc32_fold_reset = &crc32_fold_reset_c;
     cpu_check_features();
@@ -338,6 +359,10 @@ Z_INTERNAL uint8_t* chunkmemset_stub(uint8_t *out, unsigned dist, unsigned len) 
 # endif
         functable.chunkmemset = &chunkmemset_sse2;
 #endif
+#if defined(X86_SSE41) && defined(X86_SSE2)
+    if (x86_cpu_has_sse41)
+        functable.chunkmemset = &chunkmemset_sse41;
+#endif
 #ifdef X86_AVX_CHUNKSET
     if (x86_cpu_has_avx2)
         functable.chunkmemset = &chunkmemset_avx;
@@ -366,6 +391,10 @@ Z_INTERNAL uint8_t* chunkmemset_safe_stub(uint8_t *out, unsigned dist, unsigned 
 # endif
         functable.chunkmemset_safe = &chunkmemset_safe_sse2;
 #endif
+#if defined(X86_SSE41) && defined(X86_SSE2)
+    if (x86_cpu_has_sse41)
+        functable.chunkmemset_safe = &chunkmemset_safe_sse41;
+#endif
 #ifdef X86_AVX_CHUNKSET
     if (x86_cpu_has_avx2)
         functable.chunkmemset_safe = &chunkmemset_safe_avx;
@@ -386,7 +415,7 @@ Z_INTERNAL uint32_t crc32_stub(uint32_t crc, const unsigned char *buf, uint64_t 
     Assert(sizeof(uint64_t) >= sizeof(size_t),
            "crc32_z takes size_t but internally we have a uint64_t len");
 
-    functable.crc32 = &crc32_byfour;
+    functable.crc32 = &crc32_braid;
     cpu_check_features();
 
 #ifdef ARM_ACLE_CRC_HASH
@@ -440,6 +469,7 @@ Z_INTERNAL uint32_t compare256_stub(const uint8_t *src0, const uint8_t *src1) {
 /* functable init */
 Z_INTERNAL Z_TLS struct functable_s functable = {
     adler32_stub,
+    adler32_fold_copy_stub,
     crc32_stub,
     crc32_fold_reset_stub,
     crc32_fold_copy_stub,

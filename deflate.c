@@ -453,9 +453,9 @@ int32_t Z_EXPORT PREFIX(deflateResetKeep)(PREFIX3(stream) *strm) {
         INIT_STATE;
 
 #ifdef GZIP
-    if (s->wrap == 2)
+    if (s->wrap == 2) {
         strm->adler = functable.crc32_fold_reset(&s->crc_fold);
-    else
+    } else
 #endif
         strm->adler = ADLER32_INITIAL_VALUE;
     s->last_flush = -2;
@@ -982,8 +982,10 @@ int32_t Z_EXPORT PREFIX(deflate)(PREFIX3(stream) *strm, int32_t flush) {
         put_uint32(s, (uint32_t)strm->total_in);
     } else
 #endif
-    if (s->wrap == 1)
-        put_uint32_msb(s, strm->adler);
+    {
+        if (s->wrap == 1)
+            put_uint32_msb(s, strm->adler);
+    }
     PREFIX(flush_pending)(strm);
     /* If avail_out is zero, the application will call deflate again
      * to flush the rest.
@@ -1093,9 +1095,10 @@ Z_INTERNAL unsigned read_buf(PREFIX3(stream) *strm, unsigned char *buf, unsigned
         functable.crc32_fold_copy(&strm->state->crc_fold, buf, strm->next_in, len);
 #endif
     } else {
-        memcpy(buf, strm->next_in, len);
         if (strm->state->wrap == 1)
-            strm->adler = functable.adler32(strm->adler, buf, len);
+            strm->adler = functable.adler32_fold_copy(strm->adler, buf, strm->next_in, len);
+        else
+            memcpy(buf, strm->next_in, len);
     }
     strm->next_in  += len;
     strm->total_in += len;

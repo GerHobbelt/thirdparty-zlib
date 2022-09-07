@@ -6,6 +6,7 @@
 #ifndef CPU_FEATURES_H_
 #define CPU_FEATURES_H_
 
+#include "adler32_fold.h"
 #include "crc32_fold.h"
 
 #if defined(X86_FEATURES)
@@ -47,6 +48,20 @@ extern uint32_t adler32_avx512_vnni(uint32_t adler, const unsigned char *buf, si
 extern uint32_t adler32_power8(uint32_t adler, const unsigned char* buf, size_t len);
 #endif
 
+/* adler32 folding */
+#ifdef X86_SSE42_ADLER32
+extern uint32_t adler32_fold_copy_sse42(uint32_t adler, uint8_t *dst, const uint8_t *src, size_t len);
+#endif
+#ifdef X86_AVX2_ADLER32
+extern uint32_t adler32_fold_copy_avx2(uint32_t adler, uint8_t *dst, const uint8_t *src, size_t len);
+#endif
+#ifdef X86_AVX512_ADLER32
+extern uint32_t adler32_fold_copy_avx512(uint32_t adler, uint8_t *dst, const uint8_t *src, size_t len);
+#endif
+#ifdef X86_AVX512VNNI_ADLER32
+extern uint32_t adler32_fold_copy_avx512_vnni(uint32_t adler, uint8_t *dst, const uint8_t *src, size_t len);
+#endif
+
 /* CRC32 folding */
 #ifdef X86_PCLMULQDQ_CRC
 extern uint32_t crc32_fold_reset_pclmulqdq(crc32_fold *crc);
@@ -70,6 +85,10 @@ extern uint8_t* chunkcopy_safe_sse2(uint8_t *out, uint8_t const *from, unsigned 
 extern uint8_t* chunkunroll_sse2(uint8_t *out, unsigned *dist, unsigned *len);
 extern uint8_t* chunkmemset_sse2(uint8_t *out, unsigned dist, unsigned len);
 extern uint8_t* chunkmemset_safe_sse2(uint8_t *out, unsigned dist, unsigned len, unsigned left);
+#endif
+#ifdef X86_SSE41
+extern uint8_t* chunkmemset_sse41(uint8_t *out, unsigned dist, unsigned len);
+extern uint8_t* chunkmemset_safe_sse41(uint8_t *out, unsigned dist, unsigned len, unsigned left);
 #endif
 #ifdef X86_AVX_CHUNKSET
 extern uint32_t chunksize_avx(void);
@@ -99,7 +118,7 @@ extern uint8_t* chunkmemset_safe_power8(uint8_t *out, unsigned dist, unsigned le
 /* CRC32 */
 typedef uint32_t (*crc32_func)(uint32_t crc32, const unsigned char * buf, uint64_t len);
 
-extern uint32_t crc32_byfour(uint32_t crc, const unsigned char *buf, uint64_t len);
+extern uint32_t crc32_braid(uint32_t crc, const unsigned char *buf, uint64_t len);
 #ifdef ARM_ACLE_CRC_HASH
 extern uint32_t crc32_acle(uint32_t crc, const unsigned char *buf, uint64_t len);
 #elif defined(POWER8_VSX_CRC32)

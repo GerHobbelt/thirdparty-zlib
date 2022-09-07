@@ -9,24 +9,11 @@
 #include "../../zbuild.h"
 #include "../../zutil.h"
 #include "../../adler32_p.h"
+#include "adler32_ssse3_p.h"
 
 #ifdef X86_SSSE3_ADLER32
 
 #include <immintrin.h>
-
-static inline uint32_t partial_hsum(__m128i x) {
-    __m128i second_int = _mm_bsrli_si128(x, 8);
-    __m128i sum = _mm_add_epi32(x, second_int);
-    return _mm_cvtsi128_si32(sum);
-}
-
-static inline uint32_t hsum(__m128i x) {
-    __m128i sum1 = _mm_unpackhi_epi64(x, x);
-    __m128i sum2 = _mm_add_epi32(x, sum1);
-    __m128i sum3 = _mm_shuffle_epi32(sum2, 0x01);
-    __m128i sum4 = _mm_add_epi32(sum2, sum3);
-    return _mm_cvtsi128_si32(sum4);
-}
 
 Z_INTERNAL uint32_t adler32_ssse3(uint32_t adler, const unsigned char *buf, size_t len) {
     uint32_t sum2;
