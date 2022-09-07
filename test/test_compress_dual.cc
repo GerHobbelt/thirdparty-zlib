@@ -13,15 +13,15 @@
 
 TEST(compress, basic_zlib) {
     Byte compr[128], uncompr[128];
-    uLong compr_len = sizeof(compr), uncompr_len = sizeof(uncompr);
+    size_t compr_len = sizeof(compr), uncompr_len = sizeof(uncompr);
     int err;
 
-    err = compress(compr, &compr_len, (const unsigned char *)hello, hello_len);
+    err = zng_compress(compr, &compr_len, (const unsigned char *)hello, hello_len);
     EXPECT_EQ(err, Z_OK);
 
     strcpy((char*)uncompr, "garbage");
 
-    err = uncompress(uncompr, &uncompr_len, compr, compr_len);
+    err = zng_uncompress(uncompr, &uncompr_len, compr, compr_len);
     EXPECT_EQ(err, Z_OK);
 
     EXPECT_STREQ((char *)uncompr, (char *)hello);
