@@ -37,8 +37,6 @@
 #define zng_deflateGetDictionary  @ZLIB_SYMBOL_PREFIX@zng_deflateGetDictionary
 #define zng_deflateInit           @ZLIB_SYMBOL_PREFIX@zng_deflateInit
 #define zng_deflateInit2          @ZLIB_SYMBOL_PREFIX@zng_deflateInit2
-#define zng_deflateInit2_         @ZLIB_SYMBOL_PREFIX@zng_deflateInit2_
-#define zng_deflateInit_          @ZLIB_SYMBOL_PREFIX@zng_deflateInit_
 #define zng_deflateParams         @ZLIB_SYMBOL_PREFIX@zng_deflateParams
 #define zng_deflatePending        @ZLIB_SYMBOL_PREFIX@zng_deflatePending
 #define zng_deflatePrime          @ZLIB_SYMBOL_PREFIX@zng_deflatePrime

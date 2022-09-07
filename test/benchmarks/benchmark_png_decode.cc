@@ -61,9 +61,9 @@ public:
         /* Set all to NULL */
         memset(files, 0, sizeof(FILE*));
 
-		for (size_t i = 0; i < 10; ++i) {
-			inpng[i] ={NULL, 0, 0};
-		}
+        for (size_t i = 0; i < 10; ++i) {
+            inpng[i] ={NULL, 0, 0};
+        }
 
         for (size_t i = 0; i < 10; ++i) {
             sprintf(test_fname, "test_pngs/%zu.png", i);

@@ -8,6 +8,9 @@
 #include "zbuild.h"
 #include "zutil.h"
 
+#include "monolithic_examples.h"
+
+
 /*
     The crc32 table header file contains tables for both 32-bit and 64-bit
     z_word_t's, and so requires a 64-bit type be available. In that case,

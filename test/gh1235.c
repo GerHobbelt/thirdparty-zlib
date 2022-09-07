@@ -3,6 +3,9 @@
 #include <string.h>
 #include "zutil.h"
 
+#include "monolithic_examples.h"
+
+
 #if defined(BUILD_MONOLITHIC)
 #define main      zlib_gh1235_test_main
 #endif

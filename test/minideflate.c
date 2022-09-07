@@ -23,6 +23,9 @@
 #  define SET_BINARY_MODE(file)
 #endif
 
+#include "monolithic_examples.h"
+
+
 #define CHECK_ERR(err, msg) { \
     if (err != Z_OK) { \
         fprintf(stderr, "%s error: %d\n", msg, err); \

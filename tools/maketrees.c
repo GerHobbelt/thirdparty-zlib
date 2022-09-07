@@ -9,6 +9,9 @@
 #include "deflate.h"
 #include "trees.h"
 
+#include "monolithic_examples.h"
+
+
 static ct_data static_ltree[L_CODES+2];
 /* The static literal tree. Since the bit lengths are imposed, there is no
  * need for the L_CODES extra codes used during heap construction. However

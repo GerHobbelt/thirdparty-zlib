@@ -16,6 +16,9 @@
 #include <stdarg.h>
 #include <inttypes.h>
 
+#include "monolithic_examples.h"
+
+
 #define TESTFILE "foo.gz"
 
 static const char hello[] = "hello, hello!";

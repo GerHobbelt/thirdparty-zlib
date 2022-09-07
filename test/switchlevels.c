@@ -20,6 +20,9 @@
 #  define SET_BINARY_MODE(file)
 #endif
 
+#include "monolithic_examples.h"
+
+
 static int read_all(unsigned char *buf, size_t size) {
     size_t total_read = 0;
     while (total_read < size) {

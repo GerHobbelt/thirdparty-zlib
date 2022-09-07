@@ -9,6 +9,9 @@ extern "C" {
 #  include "cpu_features.h"
 }
 
+#include "monolithic_examples.h"
+
+
 #if defined(BUILD_MONOLITHIC)
 #define main      zlib_unittests_main
 #endif

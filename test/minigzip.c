@@ -48,6 +48,9 @@ extern int unlink (const char *);
 #endif
 #endif
 
+#include "monolithic_examples.h"
+
+
 #ifndef GZ_SUFFIX
 #  define GZ_SUFFIX ".gz"
 #endif

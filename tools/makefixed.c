@@ -4,8 +4,11 @@
 #include "inftrees.h"
 #include "inflate.h"
 
+#include "monolithic_examples.h"
+
+
 // Build and return state with length and distance decoding tables and index sizes set to fixed code decoding.
-void Z_INTERNAL buildfixedtables(struct inflate_state *state) {
+static void Z_INTERNAL buildfixedtables(struct inflate_state *state) {
     static code *lenfix, *distfix;
     static code fixed[544];
 
@@ -40,7 +43,7 @@ void Z_INTERNAL buildfixedtables(struct inflate_state *state) {
 
 //  Create fixed tables on the fly and write out a inffixed_tbl.h file that is #include'd above.
 //  makefixed() writes those tables to stdout, which would be piped to inffixed_tbl.h.
-void makefixed(void) {
+static void makefixed(void) {
     unsigned low, size;
     struct inflate_state state;
 

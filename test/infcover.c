@@ -19,6 +19,9 @@
 #include "inftrees.h"
 #include "inflate.h"
 
+#include "monolithic_examples.h"
+
+
 /* -- memory tracking routines -- */
 
 /*

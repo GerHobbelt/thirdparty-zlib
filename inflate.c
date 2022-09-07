@@ -157,7 +157,7 @@ int32_t ZNG_CONDEXPORT PREFIX(inflateInit2)(PREFIX3(stream) *strm, int32_t windo
     if (state == NULL)
         return Z_MEM_ERROR;
     Tracev((stderr, "inflate: allocated\n"));
-	memset(state, 0, sizeof(*state));
+    memset(state, 0, sizeof(*state));
     strm->state = (struct internal_state *)state;
     state->strm = strm;
     state->window = NULL;
@@ -1310,7 +1310,7 @@ int32_t Z_EXPORT PREFIX(inflateCopy)(PREFIX3(stream) *dest, PREFIX3(stream) *sou
     copy = ZALLOC_INFLATE_STATE(source);
     if (copy == NULL)
         return Z_MEM_ERROR;
-	memset(copy, 0, sizeof(*copy));
+    memset(copy, 0, sizeof(*copy));
     window = NULL;
     if (state->window != NULL) {
         wsize = 1U << state->wbits;
