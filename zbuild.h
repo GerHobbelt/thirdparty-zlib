@@ -173,19 +173,19 @@
 #elif defined(__WIN__) || (defined(_MSC_VER) && (defined(_M_X64) || defined(_M_IX86_FP))  /* _mm_prefetch() is not defined outside of x86/x64 */ )
 #  include <mmintrin.h>   /* https://docs.microsoft.com/en-us/cpp/intrinsics/x64-amd64-intrinsics-list?view=msvc-170 */
 
-#if defined(__SSE__) || (_M_IX86_FP >= 1)
+#if defined(__SSE__) || (defined(_M_IX86_FP) && (_M_IX86_FP >= 1))
 #  include <xmmintrin.h>
 #endif
-#if defined(__SSE2__) || (_M_IX86_FP >= 2)
+#if defined(__SSE2__) || (defined(_M_IX86_FP) && (_M_IX86_FP >= 2))
 #  include <emmintrin.h>
 #endif
 
-#if defined(__SSE2__) || (_M_IX86_FP >= 2)
+#if defined(__SSE2__) || (defined(_M_IX86_FP) && (_M_IX86_FP >= 2))
 #  include <pmmintrin.h>     //SSE3
 #  include <tmmintrin.h>     //SSSE3
 #endif
 
-#if defined(__AVX__) || (_M_IX86_FP >= 2)
+#if defined(__AVX__) || (defined(_M_IX86_FP) && (_M_IX86_FP >= 2))
 #  include <immintrin.h>
 #endif
 
