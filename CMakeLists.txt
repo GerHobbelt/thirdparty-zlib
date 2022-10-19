@@ -34,7 +34,7 @@ string(REGEX REPLACE ".*#define[ \t]+ZLIBNG_VERSION[ \t]+\"([-0-9A-Za-z.]+)\".*"
 message(STATUS "ZLIB_HEADER_VERSION: ${ZLIB_HEADER_VERSION}")
 message(STATUS "ZLIBNG_HEADER_VERSION: ${ZLIBNG_HEADER_VERSION}")
 
-project(zlib VERSION ${ZLIB_HEADER_VERSION} LANGUAGES C)
+project(ZLIB VERSION ${ZLIB_HEADER_VERSION} LANGUAGES C)
 
 set(INSTALL_BIN_DIR "bin" CACHE PATH "Installation directory for executables")
 set(INSTALL_LIB_DIR "lib" CACHE PATH "Installation directory for libraries")
