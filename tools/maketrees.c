@@ -6,7 +6,7 @@
 #include <stdio.h>
 #include "zbuild.h"
 #include "deflate.h"
-#include "trees_p.h"
+#include "trees.h"
 
 static ct_data static_ltree[L_CODES+2];
 /* The static literal tree. Since the bit lengths are imposed, there is no
@@ -23,11 +23,11 @@ static unsigned char dist_code[DIST_CODE_LEN];
  * the last 256 values correspond to the top 8 bits of the 15 bit distances.
  */
 
-static unsigned char length_code[MAX_MATCH-MIN_MATCH+1];
-/* length code for each normalized match length (0 == MIN_MATCH) */
+static unsigned char length_code[STD_MAX_MATCH-STD_MIN_MATCH+1];
+/* length code for each normalized match length (0 == STD_MIN_MATCH) */
 
 static int base_length[LENGTH_CODES];
-/* First normalized length for each code (0 = MIN_MATCH) */
+/* First normalized length for each code (0 = STD_MIN_MATCH) */
 
 static int base_dist[D_CODES];
 /* First normalized distance for each code (0 = distance of 1) */
@@ -90,7 +90,7 @@ static void tr_static_init(void) {
     /* The static distance tree is trivial: */
     for (n = 0; n < D_CODES; n++) {
         static_dtree[n].Len = 5;
-        static_dtree[n].Code = (uint16_t)bi_reverse((unsigned)n, 5);
+        static_dtree[n].Code = PREFIX(bi_reverse)((unsigned)n, 5);
     }
 }
 
@@ -98,45 +98,45 @@ static void tr_static_init(void) {
       ((i) == (last)? "\n};\n\n" :    \
        ((i) % (width) == (width)-1 ? ",\n" : ", "))
 
-static void gen_trees_header() {
+static void gen_trees_header(void) {
     int i;
 
-    printf("#ifndef TREES_H_\n");
-    printf("#define TREES_H_\n\n");
+    printf("#ifndef TREES_TBL_H_\n");
+    printf("#define TREES_TBL_H_\n\n");
 
     printf("/* header created automatically with maketrees.c */\n\n");
 
-    printf("ZLIB_INTERNAL const ct_data static_ltree[L_CODES+2] = {\n");
+    printf("Z_INTERNAL const ct_data static_ltree[L_CODES+2] = {\n");
     for (i = 0; i < L_CODES+2; i++) {
         printf("{{%3u},{%u}}%s", static_ltree[i].Code, static_ltree[i].Len, SEPARATOR(i, L_CODES+1, 5));
     }
 
-    printf("ZLIB_INTERNAL const ct_data static_dtree[D_CODES] = {\n");
+    printf("Z_INTERNAL const ct_data static_dtree[D_CODES] = {\n");
     for (i = 0; i < D_CODES; i++) {
         printf("{{%2u},{%u}}%s", static_dtree[i].Code, static_dtree[i].Len, SEPARATOR(i, D_CODES-1, 5));
     }
 
-    printf("const unsigned char ZLIB_INTERNAL zng_dist_code[DIST_CODE_LEN] = {\n");
+    printf("const unsigned char Z_INTERNAL zng_dist_code[DIST_CODE_LEN] = {\n");
     for (i = 0; i < DIST_CODE_LEN; i++) {
         printf("%2u%s", dist_code[i], SEPARATOR(i, DIST_CODE_LEN-1, 20));
     }
 
-    printf("const unsigned char ZLIB_INTERNAL zng_length_code[MAX_MATCH-MIN_MATCH+1] = {\n");
-    for (i = 0; i < MAX_MATCH-MIN_MATCH+1; i++) {
-        printf("%2u%s", length_code[i], SEPARATOR(i, MAX_MATCH-MIN_MATCH, 20));
+    printf("const unsigned char Z_INTERNAL zng_length_code[STD_MAX_MATCH-STD_MIN_MATCH+1] = {\n");
+    for (i = 0; i < STD_MAX_MATCH-STD_MIN_MATCH+1; i++) {
+        printf("%2u%s", length_code[i], SEPARATOR(i, STD_MAX_MATCH-STD_MIN_MATCH, 20));
     }
 
-    printf("ZLIB_INTERNAL const int base_length[LENGTH_CODES] = {\n");
+    printf("Z_INTERNAL const int base_length[LENGTH_CODES] = {\n");
     for (i = 0; i < LENGTH_CODES; i++) {
         printf("%d%s", base_length[i], SEPARATOR(i, LENGTH_CODES-1, 20));
     }
 
-    printf("ZLIB_INTERNAL const int base_dist[D_CODES] = {\n");
+    printf("Z_INTERNAL const int base_dist[D_CODES] = {\n");
     for (i = 0; i < D_CODES; i++) {
         printf("%5d%s", base_dist[i], SEPARATOR(i, D_CODES-1, 10));
     }
 
-    printf("#endif /* TREES_H_ */\n");
+    printf("#endif /* TREES_TBL_H_ */\n");
 }
 
 // The output of this application can be piped out to recreate trees.h

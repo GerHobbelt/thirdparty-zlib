@@ -12,9 +12,6 @@
  * real thing.
  */
 
-#define _POSIX_SOURCE 1  /* This file needs POSIX for fdopen(). */
-#define _POSIX_C_SOURCE 200112  /* For snprintf(). */
-
 #include "zbuild.h"
 #ifdef ZLIB_COMPAT
 #  include "zlib.h"
@@ -30,10 +27,6 @@
 #  include <sys/types.h>
 #  include <sys/mman.h>
 #  include <sys/stat.h>
-#endif
-
-#ifndef UNALIGNED_OK
-#  include <malloc.h>
 #endif
 
 #if defined(_WIN32) || defined(__CYGWIN__)
@@ -60,7 +53,7 @@ extern int unlink (const char *);
 #define SUFFIX_LEN (sizeof(GZ_SUFFIX)-1)
 
 #ifndef BUFLEN
-#  define BUFLEN      16384      /* read buffer size */
+#  define BUFLEN     16384       /* read buffer size */
 #endif
 #define BUFLENW     (BUFLEN * 3) /* write buffer size */
 #define MAX_NAME_LEN 1024
@@ -90,7 +83,7 @@ void error(const char *msg) {
  */
 
 void gz_compress(FILE *in, gzFile out) {
-    char buf[BUFLEN];
+    char *buf;
     int len;
     int err;
 
@@ -100,12 +93,16 @@ void gz_compress(FILE *in, gzFile out) {
      */
     if (gz_compress_mmap(in, out) == Z_OK) return;
 #endif
-    /* Clear out the contents of buf before reading from the file to avoid
-       MemorySanitizer: use-of-uninitialized-value warnings. */
-    memset(buf, 0, sizeof(buf));
+    buf = (char *)calloc(BUFLEN, 1);
+    if (buf == NULL) {
+        perror("out of memory");
+        exit(1);
+    }
+
     for (;;) {
-        len = (int)fread(buf, 1, sizeof(buf), in);
+        len = (int)fread(buf, 1, BUFLEN, in);
         if (ferror(in)) {
+            free(buf);
             perror("fread");
             exit(1);
         }
@@ -113,6 +110,7 @@ void gz_compress(FILE *in, gzFile out) {
 
         if (PREFIX(gzwrite)(out, buf, (unsigned)len) != len) error(PREFIX(gzerror)(out, &err));
     }
+    free(buf);
     fclose(in);
     if (PREFIX(gzclose)(out) != Z_OK) error("failed gzclose");
 }
@@ -136,7 +134,7 @@ int gz_compress_mmap(FILE *in, gzFile out) {
     if (buf_len <= 0) return Z_ERRNO;
 
     /* Now do the actual mmap: */
-    buf = mmap((char *) 0, buf_len, PROT_READ, MAP_SHARED, ifd, (off_t)0);
+    buf = mmap((void *)0, buf_len, PROT_READ, MAP_SHARED, ifd, (off_t)0);
     if (buf == (char *)(-1)) return Z_ERRNO;
 
     /* Compress the whole file at once: */
@@ -155,19 +153,26 @@ int gz_compress_mmap(FILE *in, gzFile out) {
  * Uncompress input to output then close both files.
  */
 void gz_uncompress(gzFile in, FILE *out) {
-    char buf[BUFLENW];
+    char *buf = (char *)malloc(BUFLENW);
     int len;
     int err;
 
+    if (buf == NULL) error("out of memory");
+
     for (;;) {
-        len = PREFIX(gzread)(in, buf, sizeof(buf));
-        if (len < 0) error (PREFIX(gzerror)(in, &err));
+        len = PREFIX(gzread)(in, buf, BUFLENW);
+        if (len < 0) {
+            free(buf);
+            error(PREFIX(gzerror)(in, &err));
+        }
         if (len == 0) break;
 
         if ((int)fwrite(buf, 1, (unsigned)len, out) != len) {
+            free(buf);
             error("failed fwrite");
         }
     }
+    free(buf);
     if (fclose(out)) error("failed fclose");
 
     if (PREFIX(gzclose)(in) != Z_OK) error("failed gzclose");
