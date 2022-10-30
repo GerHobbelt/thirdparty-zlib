@@ -10,13 +10,8 @@
 #include "../../zutil.h"
 
 #ifdef ARM_NEON_ADLER32
-#ifdef _M_ARM64
-#  include <arm64_neon.h>
-#else
-#  include <arm_neon.h>
-#endif
+#include "neon_intrins.h"
 #include "../../adler32_p.h"
-#include "../../fallback_builtins.h"
 
 static void NEON_accum32(uint32_t *s, const uint8_t *buf, uint64_t len) {
     static const uint16_t ALIGNED_(16) taps[64] = {

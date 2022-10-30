@@ -13,12 +13,7 @@
 #include "../../deflate.h"
 
 #if defined(ARM_NEON_SLIDEHASH)
-#ifdef _M_ARM64
-#  include <arm64_neon.h>
-#else
-#  include <arm_neon.h>
-#endif
-#include "../../fallback_builtins.h"
+#include "neon_intrins.h"
 
 /* SIMD version of hash_chain rebase */
 static inline void slide_hash_chain(Pos *table, uint32_t entries, uint16_t wsize) {

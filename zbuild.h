@@ -50,6 +50,12 @@
 #define _SSIZE_T_DEFINED
 #endif
 
+#  if defined(_WIN64)
+    #define SSIZE_MAX _I64_MAX
+#  else
+    #define SSIZE_MAX LONG_MAX
+#  endif
+
 # define __attribute__(x)	/**/
 #endif
 
