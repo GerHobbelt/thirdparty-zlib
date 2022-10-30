@@ -403,7 +403,7 @@ if test "$gcc" -eq 1 && ($cc $CFLAGS -c $test.c) >> configure.log 2>&1; then
     SFLAGS="${SFLAGS} ${NATIVE_FLAG}"
   fi
   if test "$warn" -eq 1; then
-    CFLAGS="${CFLAGS} -Wextra -Wpedantic -Wno-implicit-fallthrough"
+    CFLAGS="${CFLAGS} -Wextra -Wpedantic"
   fi
   if test $debug -eq 1; then
     CFLAGS="${CFLAGS} -DZLIB_DEBUG"
@@ -469,7 +469,7 @@ if test "$gcc" -eq 1 && ($cc $CFLAGS -c $test.c) >> configure.log 2>&1; then
         EXE='.exe' ;;
   MINGW* | mingw*)
         ARFLAGS="rcs"
-        CFLAGS="${CFLAGS} -D_POSIX_C_SOURCE=200809L -D_GNU_SOURCE=1"
+        CFLAGS="${CFLAGS} -D_POSIX_C_SOURCE=200809L -D_GNU_SOURCE=1 -Wno-pedantic-ms-format"
         SFLAGS="${CFLAGS}"
         shared_ext='.dll'
         sharedlibdir='${bindir}'
@@ -950,6 +950,22 @@ EOF
     echo >> configure.log
     echo "Checking for attribute(visibility(internal)) support... No." | tee -a configure.log
   fi
+fi
+
+# Check for _Thread_local support in compiler
+cat > $test.c << EOF
+_Thread_local int test;
+int main(void) {
+    (void)test;
+    return 0;
+}
+EOF
+if try ${CC} ${CFLAGS} $test.c $LDSHAREDLIBC; then
+    echo "Checking for _Thread_local ... Yes." | tee -a configure.log
+    CFLAGS="$CFLAGS -DHAVE_THREAD_LOCAL"
+    SFLAGS="$SFLAGS -DHAVE_THREAD_LOCAL"
+else
+    echo "Checking for _Thread_local ... No." | tee -a configure.log
 fi
 
 # Check for __builtin_ctz() support in compiler

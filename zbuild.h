@@ -27,7 +27,7 @@
 
 /* Determine compiler support for TLS */
 #ifndef Z_TLS
-#  if (defined(STDC11) || (defined(__STDC_VERSION__) && (__STDC_VERSION__ >= 201112))) && !defined(__STDC_NO_THREADS__)
+#  ifdef HAVE_THREAD_LOCAL
 #    define Z_TLS _Thread_local
 #  elif defined(__GNUC__) || defined(__SUNPRO_C)
 #    define Z_TLS __thread
@@ -36,6 +36,22 @@
 #  else
 #    warning Unable to detect Thread Local Storage support.
 #    define Z_TLS
+#  endif
+#endif
+
+#ifndef Z_HAS_ATTRIBUTE
+#  if defined(__has_attribute)
+#    define Z_HAS_ATTRIBUTE(a) __has_attribute(a)
+#  else
+#    define Z_HAS_ATTRIBUTE(a) 0
+#  endif
+#endif
+
+#ifndef Z_FALLTHROUGH
+#  if Z_HAS_ATTRIBUTE(__fallthrough__) || (defined(__GNUC__) && (__GNUC__ >= 7))
+#    define Z_FALLTHROUGH __attribute__((__fallthrough__))
+#  else
+#    define Z_FALLTHROUGH do {} while(0) /* fallthrough */
 #  endif
 #endif
 

@@ -199,7 +199,7 @@ elseif(CMAKE_C_COMPILER_ID MATCHES "GNU" OR CMAKE_C_COMPILER_ID MATCHES "Clang")
     # Enable warnings in GCC and Clang
     set(WARNFLAGS -Wall)
     set(WARNFLAGS_MAINTAINER -Wextra -Wpedantic)
-    set(WARNFLAGS_DISABLE -Wno-implicit-fallthrough)
+    set(WARNFLAGS_DISABLE)
     if(WITH_NATIVE_INSTRUCTIONS)
         if(BASEARCH_PPC_FOUND)
             set(NATIVEFLAG "-mcpu=native")
@@ -245,6 +245,9 @@ elseif(CMAKE_C_COMPILER_ID MATCHES "GNU" OR CMAKE_C_COMPILER_ID MATCHES "Clang")
         if(FNO_LTO_AVAILABLE)
             set(NOLTOFLAG "-fno-lto")
         endif()
+    endif()
+    if(MINGW)
+        list(APPEND WARNFLAGS_DISABLE -Wno-pedantic-ms-format)
     endif()
 else()
     if(WITH_NATIVE_INSTRUCTIONS)
@@ -384,6 +387,21 @@ if(HAVE_ATTRIBUTE_VISIBILITY_INTERNAL)
 endif()
 
 #
+# check for _Thread_local() support in the compiler
+#
+check_c_source_compiles(
+    "_Thread_local int test;
+    int main(void) {
+        (void)test;
+        return 0;
+    }"
+    HAVE_THREAD_LOCAL
+)
+if(HAVE_THREAD_LOCAL)
+    add_definitions(-DHAVE_THREAD_LOCAL)
+endif()
+
+#
 # check for __builtin_ctz() support in the compiler
 #
 check_c_source_compiles(
@@ -398,6 +416,7 @@ check_c_source_compiles(
 if(HAVE_BUILTIN_CTZ)
     add_definitions(-DHAVE_BUILTIN_CTZ)
 endif()
+
 #
 # check for __builtin_ctzll() support in the compiler
 #
