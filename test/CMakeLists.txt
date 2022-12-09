@@ -72,17 +72,21 @@ add_executable(makecrct ${PROJECT_SOURCE_DIR}/tools/makecrct.c)
 configure_test_executable(makecrct)
 set(MAKECRCT_COMMAND ${CMAKE_CROSSCOMPILING_EMULATOR} $<TARGET_FILE:makecrct>)
 
-# Runs tests targeting CVEs
-include(cmake/test-cves.cmake)
+# Emscripten does not support large amounts of data via stdin/out
+# https://github.com/emscripten-core/emscripten/issues/16755#issuecomment-1102732849
+if(NOT BASEARCH_WASM32_FOUND)
+    # Runs tests targeting CVEs
+    include(cmake/test-cves.cmake)
 
-# Run tests with data files
-include(cmake/test-data.cmake)
+    # Run tests with data files
+    include(cmake/test-data.cmake)
 
-# Run tests targeting GitHub issues
-include(cmake/test-issues.cmake)
+    # Run tests targeting GitHub issues
+    include(cmake/test-issues.cmake)
 
-# Run tests targeting tools
-include(cmake/test-tools.cmake)
+    # Run tests targeting tools
+    include(cmake/test-tools.cmake)
+endif()
 
 if(WITH_FUZZERS)
     add_subdirectory(fuzz)
@@ -224,7 +228,7 @@ else()
     target_link_libraries(gtest_zlib GTest::GTest)
 
     find_package(Threads)
-    if(Threads_FOUND)
+    if(Threads_FOUND AND NOT BASEARCH_WASM32_FOUND)
         target_sources(gtest_zlib PRIVATE test_deflate_concurrency.cc)
         if(UNIX AND NOT APPLE)
             # On Linux, use a workaround for https://gcc.gnu.org/bugzilla/show_bug.cgi?id=52590
