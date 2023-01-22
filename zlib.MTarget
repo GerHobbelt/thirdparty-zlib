@@ -2,10 +2,9 @@
 {
 	Compile
 	{
+		!!CompileDialect "C"
 		Warnings "Off"
-		{
-			!!Compile.Type "C"
-		}
+		Analyzer false
 	}
 	Target
 	{
