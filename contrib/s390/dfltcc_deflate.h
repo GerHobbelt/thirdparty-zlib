@@ -9,7 +9,8 @@ int ZLIB_INTERNAL dfltcc_deflate OF((z_streamp strm,
                                      block_state *result));
 int ZLIB_INTERNAL dfltcc_deflate_params OF((z_streamp strm,
                                             int level,
-                                            int strategy));
+                                            int strategy,
+                                            int *flush)); 
 int ZLIB_INTERNAL dfltcc_deflate_set_dictionary OF((z_streamp strm,
                                                     const Bytef *dictionary,
                                                     uInt dict_length));
@@ -29,11 +30,14 @@ int ZLIB_INTERNAL dfltcc_deflate_get_dictionary OF((z_streamp strm,
     } while (0)
 #define DEFLATE_RESET_KEEP_HOOK(strm) \
     dfltcc_reset((strm), sizeof(deflate_state))
-#define DEFLATE_PARAMS_HOOK(strm, level, strategy) \
+#define DEFLATE_PARAMS_HOOK(strm, level, strategy, hook_flush) \
     do { \
         int err; \
 \
-        err = dfltcc_deflate_params((strm), (level), (strategy)); \
+        err = dfltcc_deflate_params((strm), \
+                                    (level), \
+                                    (strategy), \
+                                    (hook_flush)); \
         if (err == Z_STREAM_ERROR) \
             return err; \
     } while (0)

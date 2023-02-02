@@ -2,12 +2,13 @@
 
 /*
    Use the following commands to build zlib with DFLTCC support:
-        $ CFLAGS=-DDFLTCC ./configure
-        $ make OBJA=dfltcc.o PIC_OBJA=dfltcc.lo
+        $ ./configure --dfltcc
+        $ make 
 */
 
 #define _GNU_SOURCE
 #include <ctype.h>
+#include <errno.h>
 #include <inttypes.h>
 #include <stddef.h>
 #include <stdio.h>
@@ -230,31 +231,28 @@ struct dfltcc_state {
 /*
    Compress.
  */
-local inline int dfltcc_are_params_ok(int level,
-                                      uInt window_bits,
-                                      int strategy,
-                                      uLong level_mask);
-local inline int dfltcc_are_params_ok(level, window_bits, strategy, level_mask)
+local inline int dfltcc_can_deflate_with_params(z_streamp strm,
+                                                 int level,
+                                                 uInt window_bits,
+                                                 int strategy);
+local inline int dfltcc_can_deflate_with_params(strm,
+                                                 level,
+                                                 window_bits,
+                                                 strategy)
+    z_streamp strm; 
     int level;
     uInt window_bits;
     int strategy;
-    uLong level_mask;
-{
-    return (level_mask & (1 << level)) != 0 &&
-        (window_bits == HB_BITS) &&
-        (strategy == Z_FIXED || strategy == Z_DEFAULT_STRATEGY);
-}
-
-
-int ZLIB_INTERNAL dfltcc_can_deflate(strm)
-    z_streamp strm;
 {
     deflate_state FAR *state = (deflate_state FAR *)strm->state;
     struct dfltcc_state FAR *dfltcc_state = GET_DFLTCC_STATE(state);
 
     /* Unsupported compression settings */
-    if (!dfltcc_are_params_ok(state->level, state->w_bits, state->strategy,
-                              dfltcc_state->level_mask))
+    if ((dfltcc_state->level_mask & (1 << level)) == 0)
+        return 0;
+    if (window_bits != HB_BITS)
+        return 0;
+    if (strategy != Z_FIXED && strategy != Z_DEFAULT_STRATEGY) 
         return 0;
 
     /* Unsupported hardware */
@@ -265,6 +263,17 @@ int ZLIB_INTERNAL dfltcc_can_deflate(strm)
 
     return 1;
 }
+
+int ZLIB_INTERNAL dfltcc_can_deflate(strm)
+    z_streamp strm;
+{
+    deflate_state FAR *state = (deflate_state FAR *)strm->state;
+
+    return dfltcc_can_deflate_with_params(strm,
+                                          state->level,
+                                          state->w_bits,
+                                          state->strategy);
+} 
 
 local void dfltcc_gdht OF((z_streamp strm));
 local void dfltcc_gdht(strm)
@@ -349,22 +358,24 @@ again:
     soft_bcc = 0;
     no_flush = flush == Z_NO_FLUSH;
 
-    /* Trailing empty block. Switch to software, except when Continuation Flag
-     * is set, which means that DFLTCC has buffered some output in the
-     * parameter block and needs to be called again in order to flush it.
+    /* No input data. Return, except when Continuation Flag is set, which means
+     * that DFLTCC has buffered some output in the parameter block and needs to
+     * be called again in order to flush it. 
      */
-    if (flush == Z_FINISH && strm->avail_in == 0 && !param->cf) {
-        if (param->bcf) {
-            /* A block is still open, and the hardware does not support closing
-             * blocks without adding data. Thus, close it manually.
-             */
+    if (strm->avail_in == 0 && !param->cf) {
+        /* A block is still open, and the hardware does not support closing
+         * blocks without adding data. Thus, close it manually.
+         */
+        if (!no_flush && param->bcf) { 
             send_eobs(strm, param);
             param->bcf = 0;
         }
-        return 0;
-    }
-
-    if (strm->avail_in == 0 && !param->cf) {
+        /* Let one of deflate_* functions write a trailing empty block. */
+        if (flush == Z_FINISH)
+            return 0;
+        /* Clear history. */
+        if (flush == Z_FULL_FLUSH)
+            param->hl = 0; 
         *result = need_more;
         return 1;
     }
@@ -418,7 +429,7 @@ again:
     param->cvt = state->wrap == 2 ? CVT_CRC32 : CVT_ADLER32;
     if (!no_flush)
         /* We need to close a block. Always do this in software - when there is
-         * no input data, the hardware will not nohor BCC. */
+         * no input data, the hardware will not honor BCC. */
         soft_bcc = 1;
     if (flush == Z_FINISH && !param->bcf)
         /* We are about to open a BFINAL block, set Block Header Final bit
@@ -433,8 +444,8 @@ again:
     param->sbb = (unsigned int)state->bi_valid;
     if (param->sbb > 0)
         *strm->next_out = (Bytef)state->bi_buf;
-    if (param->hl)
-        param->nt = 0; /* Honor history */
+    /* Honor history and check value */
+    param->nt = 0; 
     param->cv = state->wrap == 2 ? ZSWAP32(strm->adler) : strm->adler;
 
     /* When opening a block, choose a Huffman-Table Type */
@@ -642,27 +653,86 @@ int ZLIB_INTERNAL dfltcc_inflate_disable(strm)
     return 0;
 }
 
-/*
-   Memory management.
-   DFLTCC requires parameter blocks and window to be aligned. zlib allows
-   users to specify their own allocation functions, so using e.g.
-   `posix_memalign' is not an option. Thus, we overallocate and take the
-   aligned portion of the buffer.
-*/
+local int env_dfltcc_disabled;
+local int env_source_date_epoch;
+local unsigned long env_level_mask;
+local unsigned long env_block_size;
+local unsigned long env_block_threshold;
+local unsigned long env_dht_threshold;
+local unsigned long env_ribm;
+local uint64_t cpu_facilities[(DFLTCC_FACILITY / 64) + 1];
+local struct dfltcc_qaf_param cpu_af __attribute__((aligned(8))); 
+
 local inline int is_dfltcc_enabled OF((void));
 local inline int is_dfltcc_enabled(void)
 {
-    const char *env;
-    uint64_t facilities[(DFLTCC_FACILITY / 64) + 1];
-    register char r0 __asm__("r0");
-
-    env = secure_getenv("DFLTCC");
-    if (env && !strcmp(env, "0"))
+    if (env_dfltcc_disabled)
       /* User has explicitly disabled DFLTCC. */
       return 0;
 
-    memset(facilities, 0, sizeof(facilities));
-    r0 = sizeof(facilities) / sizeof(facilities[0]) - 1;
+    return is_bit_set((const char *)cpu_facilities, DFLTCC_FACILITY);
+}
+
+local unsigned long xstrtoul OF((const char *s, unsigned long _default));
+local unsigned long xstrtoul(s, _default)
+    const char *s;
+    unsigned long _default;
+{
+    char *endptr;
+    unsigned long result;
+
+    if (!(s && *s))
+        return _default;
+    errno = 0;
+    result = strtoul(s, &endptr, 0);
+    return (errno || *endptr) ? _default : result;
+}
+
+__attribute__((constructor)) local void init_globals OF((void));
+__attribute__((constructor)) local void init_globals(void)
+{
+    const char *env;
+    register char r0 __asm__("r0");
+
+    env = secure_getenv("DFLTCC");
+    
+
+    env_dfltcc_disabled = env && !strcmp(env, "0");
+
+    env = secure_getenv("SOURCE_DATE_EPOCH");
+    env_source_date_epoch = !!env;
+
+#ifndef DFLTCC_LEVEL_MASK
+#define DFLTCC_LEVEL_MASK 0x2
+#endif
+    env_level_mask = xstrtoul(secure_getenv("DFLTCC_LEVEL_MASK"),
+                              DFLTCC_LEVEL_MASK);
+
+#ifndef DFLTCC_BLOCK_SIZE
+#define DFLTCC_BLOCK_SIZE 1048576
+#endif
+    env_block_size = xstrtoul(secure_getenv("DFLTCC_BLOCK_SIZE"),
+                              DFLTCC_BLOCK_SIZE);
+
+#ifndef DFLTCC_FIRST_FHT_BLOCK_SIZE
+#define DFLTCC_FIRST_FHT_BLOCK_SIZE 4096
+#endif
+    env_block_threshold = xstrtoul(secure_getenv("DFLTCC_FIRST_FHT_BLOCK_SIZE"),
+                                   DFLTCC_FIRST_FHT_BLOCK_SIZE);
+
+#ifndef DFLTCC_DHT_MIN_SAMPLE_SIZE
+#define DFLTCC_DHT_MIN_SAMPLE_SIZE 4096
+#endif
+    env_dht_threshold = xstrtoul(secure_getenv("DFLTCC_DHT_MIN_SAMPLE_SIZE"),
+                                  DFLTCC_DHT_MIN_SAMPLE_SIZE);
+
+#ifndef DFLTCC_RIBM
+#define DFLTCC_RIBM 0
+#endif
+    env_ribm = xstrtoul(secure_getenv("DFLTCC_RIBM"), DFLTCC_RIBM);
+
+    memset(cpu_facilities, 0, sizeof(cpu_facilities));
+    r0 = sizeof(cpu_facilities) / sizeof(cpu_facilities[0]) - 1;
     /* STFLE is supported since z9-109 and only in z/Architecture mode. When
      * compiling with -m31, gcc defaults to ESA mode, however, since the kernel
      * is 64-bit, it's always z/Architecture mode at runtime.
@@ -671,31 +741,35 @@ local inline int is_dfltcc_enabled(void)
                      ".machinemode zarch\n"
                      "stfle %[facilities]\n"
                      ".machinemode pop\n"
-                     : [facilities] "=Q" (facilities)
+                     : [facilities] "=Q" (cpu_facilities)
                      , [r0] "+r" (r0)
                      :
                      : "cc");
-    return is_bit_set((const char *)facilities, DFLTCC_FACILITY);
+    /* Initialize available functions */
+    if (is_dfltcc_enabled())
+        dfltcc(DFLTCC_QAF, &cpu_af, NULL, NULL, NULL, NULL, NULL);
+    else
+        memset(&cpu_af, 0, sizeof(cpu_af)); 
 }
 
+/*
+   Memory management.
+
+   DFLTCC requires parameter blocks and window to be aligned. zlib allows
+   users to specify their own allocation functions, so using e.g.
+   `posix_memalign' is not an option. Thus, we overallocate and take the
+   aligned portion of the buffer.
+*/ 
 void ZLIB_INTERNAL dfltcc_reset(strm, size)
     z_streamp strm;
     uInt size;
 {
     struct dfltcc_state *dfltcc_state =
         (struct dfltcc_state *)((char FAR *)strm->state + ALIGN_UP(size, 8));
-    struct dfltcc_qaf_param *param =
-        (struct dfltcc_qaf_param *)&dfltcc_state->param;
-    const char *s;
 
-    /* Initialize available functions */
-    if (is_dfltcc_enabled()) {
-        dfltcc(DFLTCC_QAF, param, NULL, NULL, NULL, NULL, NULL);
-        memmove(&dfltcc_state->af, param, sizeof(dfltcc_state->af));
-    } else
-        memset(&dfltcc_state->af, 0, sizeof(dfltcc_state->af));
+    memcpy(&dfltcc_state->af, &cpu_af, sizeof(dfltcc_state->af));
 
-    if (secure_getenv("SOURCE_DATE_EPOCH"))
+    if (env_source_date_epoch)
         /* User needs reproducible results, but the output of DFLTCC_CMPR
          * depends on buffers' page offsets.
          */
@@ -706,36 +780,11 @@ void ZLIB_INTERNAL dfltcc_reset(strm, size)
     dfltcc_state->param.nt = 1;
 
     /* Initialize tuning parameters */
-#ifndef DFLTCC_LEVEL_MASK
-#define DFLTCC_LEVEL_MASK 0x2
-#endif
-    s = secure_getenv("DFLTCC_LEVEL_MASK");
-    dfltcc_state->level_mask = (s && *s) ? strtoul(s, NULL, 0) :
-                                           DFLTCC_LEVEL_MASK;
-#ifndef DFLTCC_BLOCK_SIZE
-#define DFLTCC_BLOCK_SIZE 1048576
-#endif
-    s = secure_getenv("DFLTCC_BLOCK_SIZE");
-    dfltcc_state->block_size = (s && *s) ? strtoul(s, NULL, 0) :
-                                           DFLTCC_BLOCK_SIZE;
-#ifndef DFLTCC_FIRST_FHT_BLOCK_SIZE
-#define DFLTCC_FIRST_FHT_BLOCK_SIZE 4096
-#endif
-    s = secure_getenv("DFLTCC_FIRST_FHT_BLOCK_SIZE");
-    dfltcc_state->block_threshold = (s && *s) ? strtoul(s, NULL, 0) :
-                                                DFLTCC_FIRST_FHT_BLOCK_SIZE;
-#ifndef DFLTCC_DHT_MIN_SAMPLE_SIZE
-#define DFLTCC_DHT_MIN_SAMPLE_SIZE 4096
-#endif
-    s = secure_getenv("DFLTCC_DHT_MIN_SAMPLE_SIZE");
-    dfltcc_state->dht_threshold = (s && *s) ? strtoul(s, NULL, 0) :
-                                              DFLTCC_DHT_MIN_SAMPLE_SIZE;
-#ifndef DFLTCC_RIBM
-#define DFLTCC_RIBM 0
-#endif
-    s = secure_getenv("DFLTCC_RIBM");
-    dfltcc_state->param.ribm = (s && *s) ? strtoul(s, NULL, 0) :
-                                           DFLTCC_RIBM;
+    dfltcc_state->level_mask = env_level_mask;
+    dfltcc_state->block_size = env_block_size;
+    dfltcc_state->block_threshold = env_block_threshold;
+    dfltcc_state->dht_threshold = env_dht_threshold;
+    dfltcc_state->param.ribm = env_ribm;
 }
 
 voidpf ZLIB_INTERNAL dfltcc_alloc_state(strm, items, size)
@@ -787,22 +836,26 @@ void ZLIB_INTERNAL dfltcc_free_window(strm, w)
 
 /*
    Switching between hardware and software compression.
+
    DFLTCC does not support all zlib settings, e.g. generation of non-compressed
    blocks or alternative window sizes. When such settings are applied on the
    fly with deflateParams, we need to convert between hardware and software
    window formats.
 */
-int ZLIB_INTERNAL dfltcc_deflate_params(strm, level, strategy)
+int ZLIB_INTERNAL dfltcc_deflate_params(strm, level, strategy, flush)
     z_streamp strm;
     int level;
     int strategy;
+    int *flush;
 {
     deflate_state FAR *state = (deflate_state FAR *)strm->state;
     struct dfltcc_state FAR *dfltcc_state = GET_DFLTCC_STATE(state);
     struct dfltcc_param_v0 FAR *param = &dfltcc_state->param;
     int could_deflate = dfltcc_can_deflate(strm);
-    int can_deflate = dfltcc_are_params_ok(level, state->w_bits, strategy,
-                                           dfltcc_state->level_mask);
+    int can_deflate = dfltcc_can_deflate_with_params(strm,
+                                                     level,
+                                                     state->w_bits,
+                                                     strategy); 
 
     if (can_deflate == could_deflate)
         /* We continue to work in the same mode - no changes needed */
@@ -812,8 +865,11 @@ int ZLIB_INTERNAL dfltcc_deflate_params(strm, level, strategy)
         /* DFLTCC was not used yet - no changes needed */
         return Z_OK;
 
-    /* Switching between hardware and software is not implemented */
-    return Z_STREAM_ERROR;
+    /* For now, do not convert between window formats - simply get rid of the
+     * old data instead.
+     */
+    *flush = Z_FULL_FLUSH;
+    return Z_OK; 
 }
 
 /*
