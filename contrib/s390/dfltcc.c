@@ -456,7 +456,10 @@ again:
         *strm->next_out = (Bytef)state->bi_buf;
     /* Honor history and check value */
     param->nt = 0; 
-    param->cv = state->wrap == 2 ? ZSWAP32(strm->adler) : strm->adler;
+    if (state->wrap == 1)
+        param->cv = strm->adler;
+    else if (state->wrap == 2)
+        param->cv = ZSWAP32(strm->adler);
 
     /* When opening a block, choose a Huffman-Table Type */
     if (!param->bcf) {
@@ -488,7 +491,10 @@ again:
         state->bi_buf = 0; /* Avoid accessing next_out */
     else
         state->bi_buf = *strm->next_out & ((1 << state->bi_valid) - 1);
-    strm->adler = state->wrap == 2 ? ZSWAP32(param->cv) : param->cv;
+    if (state->wrap == 1)
+        strm->adler = param->cv;
+    else if (state->wrap == 2)
+        strm->adler = ZSWAP32(param->cv);
 
     /* Unmask the input data */
     strm->avail_in += masked_avail_in;
@@ -600,11 +606,12 @@ dfltcc_inflate_action ZLIB_INTERNAL dfltcc_inflate(strm, flush, ret)
     }
 
     /* Translate stream to parameter block */
-    param->cvt = state->flags ? CVT_CRC32 : CVT_ADLER32;
+    param->cvt = ((state->wrap & 4) && state->flags) ? CVT_CRC32 : CVT_ADLER32;
     param->sbb = state->bits;
     if (param->hl)
         param->nt = 0; /* Honor history for the first block */
-    param->cv = state->flags ? ZSWAP32(state->check) : state->check;
+    if (state->wrap & 4)
+        param->cv = state->flags ? ZSWAP32(state->check) : state->check;
 
     /* Inflate */
     do {
@@ -615,7 +622,9 @@ dfltcc_inflate_action ZLIB_INTERNAL dfltcc_inflate(strm, flush, ret)
     strm->msg = oesc_msg(dfltcc_state->msg, param->oesc);
     state->last = cc == DFLTCC_CC_OK;
     state->bits = param->sbb;
-    strm->adler = state->check = state->flags ? ZSWAP32(param->cv) : param->cv;
+    if (state->wrap & 4)
+        strm->adler = state->check = state->flags ?
+                                     ZSWAP32(param->cv) : param->cv;
     if (cc == DFLTCC_CC_OP2_CORRUPT && param->oesc != 0) {
         /* Report an error if stream is corrupted */
         state->mode = BAD;
