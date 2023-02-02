@@ -11,6 +11,8 @@ void ZLIB_INTERNAL dfltcc_copy_state OF((voidpf dst, const voidpf src,
 void ZLIB_INTERNAL dfltcc_reset OF((z_streamp strm, uInt size));
 voidpf ZLIB_INTERNAL dfltcc_alloc_window OF((z_streamp strm, uInt items,
                                              uInt size));
+void ZLIB_INTERNAL dfltcc_copy_window OF((void *dest, const void *src,
+                                          size_t n));
 void ZLIB_INTERNAL dfltcc_free_window OF((z_streamp strm, voidpf w));
 #define DFLTCC_BLOCK_HEADER_BITS 3
 #define DFLTCC_HLITS_COUNT_BITS 5
@@ -44,11 +46,18 @@ dfltcc_inflate_action ZLIB_INTERNAL dfltcc_inflate OF((z_streamp strm,
                                                        int flush, int *ret));
 int ZLIB_INTERNAL dfltcc_was_inflate_used OF((z_streamp strm));
 int ZLIB_INTERNAL dfltcc_inflate_disable OF((z_streamp strm));
+int ZLIB_INTERNAL dfltcc_inflate_set_dictionary OF((z_streamp strm,
+                                                    const Bytef *dictionary,
+                                                    uInt dict_length));
+int ZLIB_INTERNAL dfltcc_inflate_get_dictionary OF((z_streamp strm,
+                                                    Bytef *dictionary,
+                                                    uInt* dict_length));
 
 #define ZALLOC_STATE dfltcc_alloc_state
 #define ZFREE_STATE ZFREE
 #define ZCOPY_STATE dfltcc_copy_state
 #define ZALLOC_WINDOW dfltcc_alloc_window
+#define ZCOPY_WINDOW dfltcc_copy_window
 #define ZFREE_WINDOW dfltcc_free_window
 #define TRY_FREE_WINDOW dfltcc_free_window
 #define INFLATE_RESET_KEEP_HOOK(strm) \
@@ -76,6 +85,16 @@ int ZLIB_INTERNAL dfltcc_inflate_disable OF((z_streamp strm));
 #define INFLATE_SYNC_POINT_HOOK(strm) \
     do { \
         if (dfltcc_was_inflate_used((strm))) return Z_STREAM_ERROR; \
+    } while (0)
+#define INFLATE_SET_DICTIONARY_HOOK(strm, dict, dict_len) \
+    do { \
+        if (dfltcc_can_inflate(strm)) \
+            return dfltcc_inflate_set_dictionary(strm, dict, dict_len); \
+    } while (0)
+#define INFLATE_GET_DICTIONARY_HOOK(strm, dict, dict_len) \
+    do { \
+        if (dfltcc_can_inflate(strm)) \
+            return dfltcc_inflate_get_dictionary(strm, dict, dict_len); \
     } while (0)
 
 #endif

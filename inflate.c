@@ -93,6 +93,7 @@
 #define ZFREE_STATE ZFREE
 #define ZCOPY_STATE zmemcpy
 #define ZALLOC_WINDOW ZALLOC
+#define ZCOPY_WINDOW zmemcpy
 #define ZFREE_WINDOW ZFREE
 #define INFLATE_RESET_KEEP_HOOK(strm) do {} while (0)
 #define INFLATE_PRIME_HOOK(strm, bits, value) do {} while (0)
@@ -101,6 +102,8 @@
 #define INFLATE_NEED_UPDATEWINDOW(strm) 1
 #define INFLATE_MARK_HOOK(strm) do {} while (0)
 #define INFLATE_SYNC_POINT_HOOK(strm) do {} while (0)
+#define INFLATE_SET_DICTIONARY_HOOK(strm, dict, dict_len) do {} while (0)
+#define INFLATE_GET_DICTIONARY_HOOK(strm, dict, dict_len) do {} while (0)
 #endif
 
 #ifdef MAKEFIXED
@@ -1330,6 +1333,8 @@ uInt *dictLength;
     if (inflateStateCheck(strm)) return Z_STREAM_ERROR;
     state = (struct inflate_state FAR *)strm->state;
 
+    INFLATE_GET_DICTIONARY_HOOK(strm, dictionary, dictLength);
+
     /* copy dictionary */
     if (state->whave && dictionary != Z_NULL) {
         zmemcpy(dictionary, state->window + state->wnext,
@@ -1364,6 +1369,8 @@ uInt dictLength;
         if (dictid != state->check)
             return Z_DATA_ERROR;
     }
+
+    INFLATE_SET_DICTIONARY_HOOK(strm, dictionary, dictLength);
 
     /* copy dictionary to window using updatewindow(), which will amend the
        existing dictionary if appropriate */
@@ -1529,8 +1536,7 @@ z_streamp source;
     }
     copy->next = copy->codes + (state->next - state->codes);
     if (window != Z_NULL) {
-        wsize = 1U << state->wbits;
-        zmemcpy(window, state->window, wsize);
+        ZCOPY_WINDOW(window, state->window, 1U << state->wbits);
     }
     copy->window = window;
     dest->state = (struct internal_state FAR *)copy;
