@@ -623,7 +623,7 @@ dfltcc_inflate_action ZLIB_INTERNAL dfltcc_inflate(strm, flush, ret)
     state->bits = param->sbb;
     state->whave = param->hl;
     state->wnext = (param->ho + param->hl) & ((1 << HB_BITS) - 1);
-    state->check = state->flags ? ZSWAP32(param->cv) : param->cv;
+    strm->adler = state->check = state->flags ? ZSWAP32(param->cv) : param->cv;
     if (cc == DFLTCC_CC_OP2_CORRUPT && param->oesc != 0) {
         /* Report an error if stream is corrupted */
         state->mode = BAD;
