@@ -100,6 +100,7 @@
 #define INFLATE_NEED_CHECKSUM(strm) 1
 #define INFLATE_NEED_UPDATEWINDOW(strm) 1
 #define INFLATE_MARK_HOOK(strm) do {} while (0)
+#define INFLATE_SYNC_POINT_HOOK(strm) do {} while (0)
 #endif
 
 #ifdef MAKEFIXED
@@ -1483,6 +1484,7 @@ z_streamp strm;
     struct inflate_state FAR *state;
 
     if (inflateStateCheck(strm)) return Z_STREAM_ERROR;
+    INFLATE_SYNC_POINT_HOOK(strm);
     state = (struct inflate_state FAR *)strm->state;
     return state->mode == STORED && state->bits == 0;
 }
