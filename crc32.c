@@ -199,6 +199,13 @@ const z_crc_t FAR * ZEXPORT get_crc_table()
 #define DO8 DO1; DO1; DO1; DO1; DO1; DO1; DO1; DO1
 
 /* ========================================================================= */
+#ifdef Z_POWER_OPT
+/* Rename function so resolver can use its symbol. The default version will be
+ * returned by the resolver if the host has no support for an optimized version.
+ */
+#define crc32_z crc32_z_default
+#endif /* Z_POWER_OPT */
+
 unsigned long ZEXPORT crc32_z(crc, buf, len)
     unsigned long crc;
     const unsigned char FAR *buf;
@@ -232,6 +239,11 @@ unsigned long ZEXPORT crc32_z(crc, buf, len)
     } while (--len);
     return crc ^ 0xffffffffUL;
 }
+
+#ifdef Z_POWER_OPT
+#undef crc32_z
+#include "contrib/power/crc32_z_resolver.c"
+#endif /* Z_POWER_OPT */
 
 /* ========================================================================= */
 unsigned long ZEXPORT crc32(crc, buf, len)
