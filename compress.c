@@ -5,8 +5,14 @@
 
 /* @(#) $Id$ */
 
-#define ZLIB_INTERNAL
+#include "zutil.h"
 #include "zlib.h"
+
+#ifdef DFLTCC
+#  include "contrib/s390/dfltcc.h"
+#else
+#define DEFLATE_BOUND_COMPLEN(source_len) 0
+#endif
 
 /* ===========================================================================
      Compresses the source buffer into the destination buffer. The level
@@ -81,6 +87,12 @@ int ZEXPORT compress (dest, destLen, source, sourceLen)
 uLong ZEXPORT compressBound (sourceLen)
     uLong sourceLen;
 {
+    uLong complen = DEFLATE_BOUND_COMPLEN(sourceLen);
+
+    if (complen > 0)
+	/* Architecture-specific code provided an upper bound. */
+	return complen + ZLIB_WRAPLEN;
+
     return sourceLen + (sourceLen >> 12) + (sourceLen >> 14) +
            (sourceLen >> 25) + 13;
 }

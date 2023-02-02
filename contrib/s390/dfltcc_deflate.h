@@ -46,8 +46,7 @@ int ZLIB_INTERNAL dfltcc_deflate_get_dictionary OF((z_streamp strm,
 #define DEFLATE_BOUND_ADJUST_COMPLEN(strm, complen, source_len) \
     do { \
         if (dfltcc_can_deflate((strm))) \
-            (complen) = (3 + 5 + 5 + 4 + 19 * 3 + (286 + 30) * 7 + \
-                         (source_len) * 16 + 15 + 7) >> 3; \
+            (complen) = DEFLATE_BOUND_COMPLEN(source_len); \
     } while (0)
 #define DEFLATE_NEED_CONSERVATIVE_BOUND(strm) (dfltcc_can_deflate((strm)))
 #define DEFLATE_HOOK dfltcc_deflate
