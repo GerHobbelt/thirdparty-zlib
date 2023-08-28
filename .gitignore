@@ -26,6 +26,9 @@
 /configure.log
 /build
 
+/contrib/vstudio/vc*/x64/*
+/contrib/vstudio/vc*/x86/*
+
 .DS_Store
 .vs
 *.user
@@ -49,3 +52,21 @@ user.bazelrc
 # MODULE.bazel.lock is ignored for now as per this recommendation:
 # https://github.com/bazelbuild/bazel/issues/20369
 MODULE.bazel.lock
+
+*.VC.db
+*.log
+*.opensdf
+*.sdf
+
+/build-*/*/Debug
+/build-*/*/Release
+/build-*/*/x64/Debug
+/build-*/*/x64/Release
+/build-*/Debug
+/build-*/Release
+/build-*/tests/*/Debug
+/build-*/tests/*/Release
+/build-*/tests/*/x64/Debug
+/build-*/tests/*/x64/Release
+/build-*/x64/Debug
+/build-*/x64/Release
