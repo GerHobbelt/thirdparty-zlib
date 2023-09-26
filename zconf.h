@@ -8,10 +8,6 @@
 #ifndef ZCONF_H
 #define ZCONF_H
 
-#if !defined(WINDOWS) && !defined(WIN32)
-#define HAVE_UNISTD_H
-#endif
-
 /*
  * If you *really* need a unique prefix for all types and library functions,
  * compile with -DZ_PREFIX. The "standard" zlib should be compiled without it.
@@ -138,7 +134,6 @@
 #    define uncompress2           il2cpp_z_uncompress2
 #  endif
 #  define zError                il2cpp_z_zError
-#  define z_errmsg              il2cpp_z_z_errmsg
 #  ifndef Z_SOLO
 #    define zcalloc               il2cpp_z_zcalloc
 #    define zcfree                il2cpp_z_zcfree
@@ -195,6 +190,9 @@
 #    endif
 #  endif
 #endif
+#if !defined(HAVE_UNISTD_H) && !defined(_MSC_VER)
+    #define HAVE_UNISTD_H
+#endif
 
 /*
  * Compile with -DMAXSEG_64K if the alloc function cannot allocate more
@@ -247,7 +245,11 @@
 #endif
 
 #ifdef Z_SOLO
-   typedef unsigned long z_size_t;
+#  ifdef _WIN64
+     typedef unsigned long long z_size_t;
+#  else
+     typedef unsigned long z_size_t;
+#  endif
 #else
 #  define z_longlong long long
 #  if defined(NO_SIZE_T)
@@ -357,6 +359,9 @@
 #  ifdef ZLIB_WINAPI
 #    ifdef FAR
 #      undef FAR
+#    endif
+#    ifndef WIN32_LEAN_AND_MEAN
+#      define WIN32_LEAN_AND_MEAN
 #    endif
 #    include <windows.h>
      /* No need for _export, use ZLIB.DEF instead. */
@@ -476,11 +481,18 @@ typedef uLong FAR uLongf;
 #  undef _LARGEFILE64_SOURCE
 #endif
 
-#if defined(__WATCOMC__) && !defined(Z_HAVE_UNISTD_H)
-#  define Z_HAVE_UNISTD_H
+#ifndef Z_HAVE_UNISTD_H
+#  ifdef __WATCOMC__
+#    define Z_HAVE_UNISTD_H
+#  endif
+#endif
+#ifndef Z_HAVE_UNISTD_H
+#  if defined(_LARGEFILE64_SOURCE) && !defined(_WIN32)
+#    define Z_HAVE_UNISTD_H
+#  endif
 #endif
 #ifndef Z_SOLO
-#  if defined(Z_HAVE_UNISTD_H) || defined(_LARGEFILE64_SOURCE)
+#  if defined(Z_HAVE_UNISTD_H)
 #    include <unistd.h>         /* for SEEK_*, off_t, and _LFS64_LARGEFILE */
 #    ifdef VMS
 #      include <unixio.h>       /* for off_t */
@@ -516,7 +528,7 @@ typedef uLong FAR uLongf;
 #if !defined(_WIN32) && defined(Z_LARGE64)
 #  define z_off64_t off64_t
 #else
-#  if defined(_WIN32) && !defined(__GNUC__) && !defined(Z_SOLO)
+#  if defined(_WIN32) && !defined(__GNUC__)
 #    define z_off64_t __int64
 #  else
 #    define z_off64_t z_off_t
