@@ -112,7 +112,6 @@ elseif(BASEARCH_S360_FOUND)
     option(WITH_DFLTCC_INFLATE "Build with DFLTCC intrinsics for decompression on IBM Z" OFF)
     option(WITH_CRC32_VX "Build with vectorized CRC32 on IBM Z" ON)
 elseif(BASEARCH_X86_FOUND)
-    option(FORCE_TZCNT "Always assume CPU is TZCNT capable" OFF)
     option(WITH_AVX2 "Build with AVX2" ON)
     option(WITH_AVX512 "Build with AVX512" ON)
     option(WITH_AVX512VNNI "Build with AVX512 VNNI extensions" ON)
@@ -819,10 +818,6 @@ if(WITH_OPTIM)
                 set(WITH_SSE4 OFF)
             endif()
         endif()
-        if(FORCE_TZCNT)
-            add_definitions(-DX86_NOCHECK_TZCNT)
-        endif()
-        add_feature_info(FORCE_TZCNT FORCE_TZCNT "Assume CPU is TZCNT capable")
         if(WITH_SSE2)
             check_sse2_intrinsics()
             if(HAVE_SSE2_INTRIN)
@@ -967,7 +962,7 @@ set(ZLIB_PRIVATE_HDRS
     deflate.h
     deflate_p.h
     functable.h
-    inffast.h
+    inffast_tpl.h
     inffixed_tbl.h
     inflate.h
     inflate_p.h
@@ -1001,7 +996,6 @@ set(ZLIB_SRCS
     deflate_stored.c
     functable.c
     infback.c
-    inffast.c
     inflate.c
     inftrees.c
     insert_string.c

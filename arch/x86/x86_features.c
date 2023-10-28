@@ -28,7 +28,6 @@ Z_INTERNAL int x86_cpu_has_sse41;
 Z_INTERNAL int x86_cpu_has_sse42;
 Z_INTERNAL int x86_cpu_has_pclmulqdq;
 Z_INTERNAL int x86_cpu_has_vpclmulqdq;
-Z_INTERNAL int x86_cpu_has_tzcnt;
 Z_INTERNAL int x86_cpu_has_os_save_ymm;
 Z_INTERNAL int x86_cpu_has_os_save_zmm;
 
@@ -98,7 +97,6 @@ void Z_INTERNAL x86_check_features(void) {
 
         // check BMI1 bit
         // Reference: https://software.intel.com/sites/default/files/article/405250/how-to-detect-new-instruction-support-in-the-4th-generation-intel-core-processor-family.pdf
-        x86_cpu_has_tzcnt = ebx & 0x8;
         x86_cpu_has_vpclmulqdq = ecx & 0x400;
 
         // check AVX2 bit if the OS supports saving YMM registers
@@ -119,13 +117,9 @@ void Z_INTERNAL x86_check_features(void) {
             x86_cpu_has_avx512vnni = 0;
         }
     } else {
-        x86_cpu_has_tzcnt = 0;
         x86_cpu_has_avx2 = 0;
         x86_cpu_has_avx512 = 0;
         x86_cpu_has_avx512vnni = 0;
         x86_cpu_has_vpclmulqdq = 0;
     }
-#ifdef X86_NOCHECK_TZCNT
-    Assert(!!x86_cpu_has_tzcnt, "TZCNT is not available");
-#endif
 }
