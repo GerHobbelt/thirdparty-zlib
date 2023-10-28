@@ -39,7 +39,6 @@ static void init_functable(void) {
 
     // quick_insert_string_stub:
     ft.quick_insert_string = &quick_insert_string_c;
-    cpu_check_features();
 #ifdef X86_SSE42_CRC_HASH
     if (x86_cpu_has_sse42)
         ft.quick_insert_string = &quick_insert_string_sse4;
@@ -75,7 +74,6 @@ static void init_functable(void) {
 #endif
 
     // longest_match_stub:
-    cpu_check_features();
 #ifdef UNALIGNED_OK
 #  if defined(UNALIGNED64_OK) && defined(HAVE_BUILTIN_CTZLL)
     ft.longest_match = &longest_match_unaligned_64;
@@ -105,7 +103,6 @@ static void init_functable(void) {
 #endif
 
     // longest_match_slow_stub:
-    cpu_check_features();
 #ifdef UNALIGNED_OK
 #  if defined(UNALIGNED64_OK) && defined(HAVE_BUILTIN_CTZLL)
     ft.longest_match_slow = &longest_match_slow_unaligned_64;
@@ -237,7 +234,6 @@ static void init_functable(void) {
 
     // chunkcopy_stub:
     ft.chunkcopy = &chunkcopy_c;
-    cpu_check_features();
 #ifdef X86_SSE2_CHUNKSET
 # if !defined(__x86_64__) && !defined(_M_X64) && !defined(X86_NOCHECK_SSE2)
     if (x86_cpu_has_sse2)
@@ -259,7 +255,6 @@ static void init_functable(void) {
 
     // chunkunroll_stub:
     ft.chunkunroll = &chunkunroll_c;
-    cpu_check_features();
 #ifdef X86_SSE2_CHUNKSET
 # if !defined(__x86_64__) && !defined(_M_X64) && !defined(X86_NOCHECK_SSE2)
     if (x86_cpu_has_sse2)
@@ -281,7 +276,6 @@ static void init_functable(void) {
 
     // chunkmemset_stub:
     ft.chunkmemset = &chunkmemset_c;
-    cpu_check_features();
 #ifdef X86_SSE2_CHUNKSET
 # if !defined(__x86_64__) && !defined(_M_X64) && !defined(X86_NOCHECK_SSE2)
     if (x86_cpu_has_sse2)
@@ -307,7 +301,6 @@ static void init_functable(void) {
 
     // chunkmemset_safe_stub:
     ft.chunkmemset_safe = &chunkmemset_safe_c;
-    cpu_check_features();
 #ifdef X86_SSE2_CHUNKSET
 # if !defined(__x86_64__) && !defined(_M_X64) && !defined(X86_NOCHECK_SSE2)
     if (x86_cpu_has_sse2)
