@@ -18,7 +18,7 @@ extern "C" {
 #define MAX_RANDOM_INTS (1024 * 1024)
 #define MAX_RANDOM_INTS_SIZE (MAX_RANDOM_INTS * sizeof(uint32_t))
 
-typedef uint32_t (*adler32_cpy_func)(uint32_t adler, unsigned char *dst, const uint8_t *buf, uint64_t len);
+typedef uint32_t (*adler32_cpy_func)(uint32_t adler, unsigned char *dst, const uint8_t *buf, size_t len);
 
 class adler32_copy: public benchmark::Fixture {
 private:
@@ -49,7 +49,7 @@ public:
 
         for (auto _ : state) {
             hash = adler32_func(hash, (unsigned char *)random_ints_dst,
-                                (const unsigned char*)random_ints_src, state.range(0));
+                                (const unsigned char*)random_ints_src, (size_t)state.range(0));
         }
 
         benchmark::DoNotOptimize(hash);
@@ -76,7 +76,7 @@ public:
             state.SkipWithError("CPU does not support " #name); \
         } \
         Bench(state, [](uint32_t init_sum, unsigned char *dst, \
-                        const uint8_t *buf, uint64_t len) -> uint32_t { \
+                        const uint8_t *buf, size_t len) -> uint32_t { \
             memcpy(dst, buf, (size_t)len); \
             return fptr(init_sum, buf, len); \
         }); \
