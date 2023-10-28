@@ -115,6 +115,7 @@ sse41flag="-msse4.1"
 sse42flag="-msse4.2"
 pclmulflag="-mpclmul"
 vpclmulflag="-mvpclmulqdq -mavx512f"
+xsaveflag="-mxsave"
 acleflag=
 neonflag=
 noltoflag="-fno-lto"
@@ -127,6 +128,7 @@ reducedmem=0
 gcc=0
 warn=0
 debug=0
+visibility=1
 old_cc="$CC"
 old_cflags="$CFLAGS"
 OBJC='$(OBJZ)'
@@ -268,6 +270,7 @@ if test $native -eq 1; then
   sse42flag=""
   pclmulflag=""
   vpclmulflag=""
+  xsaveflag=""
   noltoflag=""
 fi
 
@@ -424,6 +427,7 @@ if test "$gcc" -eq 1 && ($cc $CFLAGS -c $test.c) >> configure.log 2>&1; then
         LDSHAREDFLAGS="-shared -Wl,-soname,${LIBNAME}.so.${VER1},--version-script,${SRCDIR}/${MAPNAME}"
         LDCONFIG="ldconfig -m" ;;
   CYGWIN* | Cygwin* | cygwin*)
+        visibility=0
         ARFLAGS="rcs"
         SFLAGS="${CFLAGS}"
         shared_ext='.dll'
@@ -440,12 +444,16 @@ if test "$gcc" -eq 1 && ($cc $CFLAGS -c $test.c) >> configure.log 2>&1; then
         LDSHARED=${LDSHARED-"$cc"}
         LDSHAREDFLAGS="-shared -Wl,--out-implib,${IMPORTLIB},--version-script,${SRCDIR}/${MAPNAME}"
         LDSHAREDLIBC=""
-        DEFFILE='win32/${LIBNAME2}.def'
+        if test $gzfileops -eq 0; then
+          DEFFILE='win32/${LIBNAME2}.def'
+        fi
         RC="${CROSS_PREFIX}windres"
+        RCFLAGS="-I ${BUILDDIR}"
         RCOBJS='zlibrc.o'
         STRIP="${CROSS_PREFIX}strip"
         EXE='.exe' ;;
   MSYS* | msys*)
+        visibility=0
         ARFLAGS="rcs"
         SFLAGS="${CFLAGS}"
         shared_ext='.dll'
@@ -462,12 +470,16 @@ if test "$gcc" -eq 1 && ($cc $CFLAGS -c $test.c) >> configure.log 2>&1; then
         LDSHARED=${LDSHARED-"$cc"}
         LDSHAREDFLAGS="-shared -Wl,--out-implib,${IMPORTLIB}"
         LDSHAREDLIBC=""
-        DEFFILE='win32/${LIBNAME2}.def'
+        if test $gzfileops -eq 0; then
+          DEFFILE='win32/${LIBNAME2}.def'
+        fi
         RC="${CROSS_PREFIX}windres"
+        RCFLAGS="-I ${BUILDDIR}"
         RCOBJS='zlibrc.o'
         STRIP="${CROSS_PREFIX}strip"
         EXE='.exe' ;;
   MINGW* | mingw*)
+        visibility=0
         ARFLAGS="rcs"
         CFLAGS="${CFLAGS} -D_POSIX_C_SOURCE=200809L -D_GNU_SOURCE=1 -Wno-pedantic-ms-format"
         SFLAGS="${CFLAGS}"
@@ -481,8 +493,11 @@ if test "$gcc" -eq 1 && ($cc $CFLAGS -c $test.c) >> configure.log 2>&1; then
         LDSHARED=${LDSHARED-"$cc"}
         LDSHAREDFLAGS="-shared -Wl,--out-implib=${IMPORTLIB} -Wl,--version-script=${SRCDIR}/${MAPNAME}"
         LDSHAREDLIBC=""
-        DEFFILE='win32/${LIBNAME2}.def'
+        if test $gzfileops -eq 0; then
+          DEFFILE='win32/${LIBNAME2}.def'
+        fi
         RC="${CROSS_PREFIX}windres"
+        RCFLAGS="-I ${BUILDDIR}"
         if [ "$CC" == "mingw32-gcc" ]; then
           case $ARCH in
           i386 | i486 | i586 | i686) RCFLAGS="${RCFLAGS} -F pe-i386";;
@@ -859,6 +874,11 @@ if test $compat -eq 1; then
   esac
 fi
 
+if [[ ! -z $DEFFILE ]]; then
+  mkdir -p win32
+  sed < $SRCDIR/$DEFFILE.in "s/@ZLIB_SYMBOL_PREFIX@/$symbol_prefix/g" > $DEFFILE
+fi
+
 # if --gzfileops was requested
 if test $gzfileops -eq 1; then
   CFLAGS="${CFLAGS} -DWITH_GZFILEOP"
@@ -866,6 +886,7 @@ if test $gzfileops -eq 1; then
   OBJC="${OBJC} \$(OBJG)"
   PIC_OBJC="${PIC_OBJC} \$(PIC_OBJG)"
 else
+  TESTOBJG="\$(OBJG)"
   PIC_TESTOBJG="\$(OBJG)"
 fi
 
@@ -941,7 +962,7 @@ EOF
 fi
 
 # see if we can hide zlib internal symbols that are linked between separate source files using hidden
-if test "$gcc" -eq 1; then
+if test "$gcc" -eq 1 && test "$visibility" -eq 1; then
   echo >> configure.log
   cat > $test.c <<EOF
 #define Z_INTERNAL __attribute__((visibility ("hidden")))
@@ -960,7 +981,7 @@ EOF
 fi
 
 # see if we can hide zlib internal symbols that are linked between separate source files using internal
-if test "$gcc" -eq 1; then
+if test "$gcc" -eq 1 && test "$visibility" -eq 1; then
   echo >> configure.log
   cat > $test.c <<EOF
 #define Z_INTERNAL __attribute__((visibility ("internal")))
@@ -1300,6 +1321,27 @@ EOF
     else
         echo "Checking for VPCLMULQDQ intrinsics ... No." | tee -a configure.log
         HAVE_VPCLMULQDQ_INTRIN=0
+    fi
+}
+
+check_xsave_intrinsics() {
+   # Check whether compiler supports XSAVE intrinsics
+   cat > $test.c << EOF
+#ifdef _WIN32
+#  include <intrin.h>
+#else
+#  include <x86gprintrin.h>
+#endif
+int main(void) {
+    return _xgetbv(0);
+}
+EOF
+    if try ${CC} ${CFLAGS} ${xsaveflag} $test.c; then
+        echo "Checking for XSAVE intrinsics ... Yes." | tee -a configure.log
+        HAVE_XSAVE_INTRIN=1
+    else
+        echo "Checking for XSAVE intrinsics ... No." | tee -a configure.log
+        HAVE_XSAVE_INTRIN=0
     fi
 }
 
@@ -1682,6 +1724,12 @@ case "${ARCH}" in
                         ARCH_SHARED_OBJS="${ARCH_SHARED_OBJS} crc32_fold_vpclmulqdq.lo"
                     fi
                 fi
+            fi
+
+            check_xsave_intrinsics
+
+            if test ${HAVE_XSAVE_INTRIN} -eq 0; then
+                xsaveflag=""
             fi
 
             if test $forcetzcnt -eq 1; then
@@ -2092,6 +2140,7 @@ echo RCFLAGS = $RCFLAGS >> configure.log
 echo RCOBJS = $RCOBJS >> configure.log
 echo STRIP = $STRIP >> configure.log
 echo OBJC = $OBJC >> configure.log
+echo TESTOBJG = $TESTOBJG >> configure.log
 echo PIC_TESTOBJG = $PIC_TESTOBJG >> configure.log
 echo PIC_OBJC = $PIC_OBJC >> configure.log
 echo RANLIB = $RANLIB >> configure.log
@@ -2123,6 +2172,7 @@ echo sse41flag = $sse41flag >> configure.log
 echo sse42flag = $sse42flag >> configure.log
 echo pclmulflag = $pclmulflag >> configure.log
 echo vpclmulflag = $vpclmulflag >> configure.log
+echo xsaveflag = $xsaveflag >> configure.log
 echo acleflag = $acleflag >> configure.log
 echo neonflag = $neonflag >> configure.log
 echo ARCHDIR = ${ARCHDIR} >> configure.log
@@ -2183,6 +2233,7 @@ sed < $SRCDIR/Makefile.in "
 /^SRCDIR *=/s#=.*#=$SRCDIR#
 /^INCLUDES *=/s#=.*#=$INCLUDES#
 /^OBJC *=/s#=.*#= $OBJC#
+/^TESTOBJG *=/s#=.*#= $TESTOBJG#
 /^PIC_TESTOBJG *=/s#=.*#= $PIC_TESTOBJG#
 /^PIC_OBJC *=/s#=.*#= $PIC_OBJC#
 /^all: */s#:.*#: $ALL#
@@ -2260,6 +2311,7 @@ sed < $SRCDIR/$ARCHDIR/Makefile.in "
 /^SSE42FLAG *=/s#=.*#=$sse42flag#
 /^PCLMULFLAG *=/s#=.*#=$pclmulflag#
 /^VPCLMULFLAG *=/s#=.*#=$vpclmulflag#
+/^XSAVEFLAG *=/s#=.*#=$xsaveflag#
 /^ACLEFLAG *=/s#=.*#=$acleflag#
 /^NEONFLAG *=/s#=.*#=$neonflag#
 /^NOLTOFLAG *=/s#=.*#=$noltoflag#
