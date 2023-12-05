@@ -17,9 +17,7 @@
  * For conditions of distribution and use, see copyright notice in zlib.h
  */
 
-#include "zbuild.h"
-#include "zutil.h"
-#include "fallback_builtins.h"
+#include "zconf-ng.h"
 
 #ifdef X86_PCLMULQDQ_CRC
 

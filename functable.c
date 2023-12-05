@@ -3,6 +3,8 @@
  * For conditions of distribution and use, see copyright notice in zlib.h
  */
 
+#include "zconf-ng.h"
+
 #include "zbuild.h"
 #include "zutil.h"
 #include "zendian.h"

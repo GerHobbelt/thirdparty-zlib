@@ -47,6 +47,8 @@
  *
  */
 
+#include "zconf-ng.h"
+
 #include "zbuild.h"
 #include "zutil.h"
 #include "deflate.h"

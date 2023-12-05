@@ -3,6 +3,8 @@
  * For conditions of distribution and use, see copyright notice in zlib.h
  */
 
+#include "zconf-ng.h"
+
 #if defined(X86_PCLMULQDQ_CRC) && defined(X86_VPCLMULQDQ_CRC)
 
 #define X86_VPCLMULQDQ

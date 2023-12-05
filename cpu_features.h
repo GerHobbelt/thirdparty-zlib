@@ -6,6 +6,8 @@
 #ifndef CPU_FEATURES_H_
 #define CPU_FEATURES_H_
 
+#include "zconf-ng.h"
+
 #include <stdint.h>
 
 #include "adler32_fold.h"
