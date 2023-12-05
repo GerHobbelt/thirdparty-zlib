@@ -1,10 +1,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/auxv.h>
-#include <sys/utsname.h>
 
 #include "../../zbuild.h"
+
+#ifdef RISCV_RVV
+
+#include <sys/auxv.h>
+#include <sys/utsname.h>
 #include "riscv_features.h"
 
 #define ISA_V_HWCAP (1 << ('v' - 'a'))
@@ -43,3 +46,5 @@ void Z_INTERNAL riscv_check_features(struct riscv_cpu_features *features) {
     else
         riscv_check_features_compile_time(features);
 }
+
+#endif

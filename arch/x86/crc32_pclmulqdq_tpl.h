@@ -364,3 +364,5 @@ Z_INTERNAL uint32_t CRC32(uint32_t crc32, const uint8_t *buf, size_t len) {
     CRC32_FOLD(&crc_state, buf, len, crc32);
     return CRC32_FOLD_FINAL(&crc_state);
 }
+
+#endif

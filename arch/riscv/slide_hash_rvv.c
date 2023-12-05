@@ -4,12 +4,12 @@
  * For conditions of distribution and use, see copyright notice in zlib.h
  */
 
+#include "../../zbuild.h"
+#include "../../deflate.h"
+
 #ifdef RISCV_RVV
 
 #include <riscv_vector.h>
-
-#include "../../zbuild.h"
-#include "../../deflate.h"
 
 static inline void slide_hash_chain(Pos *table, uint32_t entries, uint16_t wsize) {
     size_t vl;

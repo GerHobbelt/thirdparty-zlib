@@ -128,6 +128,7 @@
 #else
 #  define Z_INTERNAL
 #endif
+#endif
 
 /* Symbol versioning helpers, allowing multiple versions of a function to exist.
  * Functions using this must also be added to zlib-ng.map for each version.

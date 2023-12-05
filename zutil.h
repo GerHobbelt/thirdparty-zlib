@@ -145,6 +145,8 @@ void Z_INTERNAL  PREFIX3(free_aligned)(zng_cfree_func zfree, void *opaque, void 
 
 #define TRY_FREE(s, p)            {if (p) ZFREE(s, p);}
 
-Z_INTERNAL void cpu_check_features(void);
+struct cpu_features;		// defined in cpu_features.h
+
+Z_INTERNAL void cpu_check_features(struct cpu_features *features);
 
 #endif /* ZUTIL_H_ */

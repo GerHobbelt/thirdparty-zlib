@@ -4,9 +4,10 @@
  * For conditions of distribution and use, see copyright notice in zlib.h
  */
 
+#include "../../zbuild.h"
+
 #ifdef RISCV_RVV
 
-#include "../../zbuild.h"
 #include "fallback_builtins.h"
 
 #include <riscv_vector.h>

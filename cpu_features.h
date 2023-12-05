@@ -6,6 +6,8 @@
 #ifndef CPU_FEATURES_H_
 #define CPU_FEATURES_H_
 
+#include <stdint.h>
+
 #include "adler32_fold.h"
 #include "crc32_fold.h"
 

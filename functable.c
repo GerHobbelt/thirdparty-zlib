@@ -13,7 +13,7 @@
 #include "cpu_features.h"
 
 static void init_functable(void) {
-    struct functable_s ft;
+	struct functable_s ft = {0};
     struct cpu_features cf;
 
     cpu_check_features(&cf);
@@ -235,7 +235,7 @@ static void init_functable(void) {
 #endif
 
     // Assign function pointers individually for atomic operation
-    functable.adler32 = ft.adler32;
+	functable.adler32 = ft.adler32;
     functable.adler32_fold_copy = ft.adler32_fold_copy;
     functable.chunkmemset_safe = ft.chunkmemset_safe;
     functable.chunksize = ft.chunksize;
@@ -364,5 +364,5 @@ Z_INTERNAL Z_TLS struct functable_s functable = {
 Z_EXPORT
 void zng_lib_init(void)
 {
-    cpu_check_features();
+    //cpu_check_features(NULL);
 }
