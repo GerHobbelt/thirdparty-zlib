@@ -6,7 +6,7 @@
  */
 
 #include "../../zutil.h"
-#ifdef X86_AVX2_ADLER32
+#ifdef X86_AVX2
 
 #include <immintrin.h>
 

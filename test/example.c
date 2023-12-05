@@ -28,16 +28,17 @@ static unsigned long dictId = 0; /* Adler32 value of the dictionary */
 #define MAX_DICTIONARY_SIZE 32768
 
 
-static void test_compress      (unsigned char *compr, z_size_t comprLen,unsigned char *uncompr, z_size_t uncomprLen);
+static void test_compress      (unsigned char *compr, z_uintmax_t comprLen, unsigned char *uncompr, z_uintmax_t uncomprLen);
 static void test_gzio          (const char *fname, unsigned char *uncompr, z_size_t uncomprLen);
 static void test_deflate       (unsigned char *compr, size_t comprLen);
 static void test_inflate       (unsigned char *compr, size_t comprLen, unsigned char *uncompr, size_t uncomprLen);
 static void test_large_deflate (unsigned char *compr, size_t comprLen, unsigned char *uncompr, size_t uncomprLen, int zng_params);
 static void test_large_inflate (unsigned char *compr, size_t comprLen, unsigned char *uncompr, size_t uncomprLen);
-static void test_flush         (unsigned char *compr, z_size_t *comprLen);
+static void test_flush         (unsigned char *compr, z_uintmax_t *comprLen);
 static void test_sync          (unsigned char *compr, size_t comprLen, unsigned char *uncompr, size_t uncomprLen);
 static void test_dict_deflate  (unsigned char *compr, size_t comprLen);
 static void test_dict_inflate  (unsigned char *compr, size_t comprLen, unsigned char *uncompr, size_t uncomprLen);
+
 
 static alloc_func zalloc = NULL;
 static free_func zfree = NULL;
@@ -63,11 +64,11 @@ static void error(const char *format, ...) {
 /* ===========================================================================
  * Test compress() and uncompress()
  */
-static void test_compress(unsigned char *compr, z_size_t comprLen, unsigned char *uncompr, z_size_t uncomprLen) {
+static void test_compress(unsigned char *compr, z_uintmax_t comprLen, unsigned char *uncompr, z_uintmax_t uncomprLen) {
     int err;
-    size_t len = strlen(hello)+1;
+    unsigned int len = (unsigned int)strlen(hello)+1;
 
-    err = PREFIX(compress)(compr, &comprLen, (const unsigned char*)hello, (z_size_t)len);
+    err = PREFIX(compress)(compr, &comprLen, (const unsigned char*)hello, len);
     CHECK_ERR(err, "compress");
 
     strcpy((char*)uncompr, "garbage");
@@ -402,7 +403,7 @@ static void test_large_inflate(unsigned char *compr, size_t comprLen, unsigned c
 /* ===========================================================================
  * Test deflate() with full flush
  */
-static void test_flush(unsigned char *compr, z_size_t *comprLen) {
+static void test_flush(unsigned char *compr, z_uintmax_t *comprLen) {
     PREFIX3(stream) c_stream; /* compression stream */
     int err;
     unsigned int len = (unsigned int)strlen(hello)+1;
@@ -543,14 +544,14 @@ static void test_dict_inflate(unsigned char *compr, size_t comprLen, unsigned ch
         }
         CHECK_ERR(err, "inflate with dict");
     }
-    
+
     err = PREFIX(inflateGetDictionary)(&d_stream, NULL, &check_dictionary_len);
     CHECK_ERR(err, "inflateGetDictionary");
 #ifndef S390_DFLTCC_INFLATE
     if (check_dictionary_len < sizeof(dictionary))
         error("bad dictionary length\n");
 #endif
-    
+
     err = PREFIX(inflateGetDictionary)(&d_stream, check_dictionary, &check_dictionary_len);
     CHECK_ERR(err, "inflateGetDictionary");
 #ifndef S390_DFLTCC_INFLATE
@@ -959,8 +960,8 @@ static void test_deflate_tune(unsigned char *compr, size_t comprLen) {
 int main(int argc, const char** argv)
 {
 	unsigned char *compr, *uncompr;
-    z_size_t comprLen = 10000*sizeof(int); /* don't overflow on MSDOS */
-    z_size_t uncomprLen = comprLen;
+    z_uintmax_t comprLen = 10000*sizeof(int); /* don't overflow on MSDOS */
+    z_uintmax_t uncomprLen = comprLen;
     static const char* myVersion = PREFIX2(VERSION);
 
     if (zVersion()[0] != myVersion[0]) {

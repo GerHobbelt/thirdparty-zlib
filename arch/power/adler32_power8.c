@@ -39,7 +39,7 @@
 #include "zbuild.h"
 #include "zutil.h"
 
-#ifdef POWER8_VSX_ADLER32
+#ifdef POWER8_VSX
 
 #include <altivec.h>
 
@@ -55,7 +55,7 @@ static inline vector unsigned int vec_sumsu(vector unsigned int __a, vector unsi
     return __a;
 }
 
-uint32_t adler32_power8(uint32_t adler, const uint8_t *buf, size_t len) {
+Z_INTERNAL uint32_t adler32_power8(uint32_t adler, const uint8_t *buf, size_t len) {
     uint32_t s1 = adler & 0xffff;
     uint32_t s2 = (adler >> 16) & 0xffff;
 
@@ -153,4 +153,4 @@ uint32_t adler32_power8(uint32_t adler, const uint8_t *buf, size_t len) {
     return adler32_len_16(s1, buf, len, s2);
 }
 
-#endif /* POWER8_VSX_ADLER32 */
+#endif /* POWER8_VSX */

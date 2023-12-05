@@ -39,9 +39,9 @@ set(MINIDEFLATE_COMMAND ${CMAKE_CROSSCOMPILING_EMULATOR} $<TARGET_FILE:minidefla
 
 if(INSTALL_UTILS)
     install(TARGETS minigzip minideflate
-        RUNTIME DESTINATION "${BIN_INSTALL_DIR}"
-        ARCHIVE DESTINATION "${LIB_INSTALL_DIR}"
-        LIBRARY DESTINATION "${LIB_INSTALL_DIR}")
+        RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
+        ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+        LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}")
 endif()
 
 add_executable(switchlevels switchlevels.c)
@@ -111,8 +111,6 @@ if(WITH_BENCHMARKS)
 endif()
 
 if(WITH_GTEST)
-    include(FetchContent)
-
     # Google test requires at least C++11
     set(CMAKE_CXX_STANDARD 11)
 
@@ -125,9 +123,13 @@ if(WITH_GTEST)
         # Must set include and compile options before fetching googletest
         include_directories($ENV{LLVM_BUILD_DIR}/include $ENV{LLVM_BUILD_DIR}/include/c++/v1)
         add_compile_options(-stdlib=libc++ -g)
+    elseif(NOT TARGET GTest::GTest)
+        find_package(GTest)
     endif()
 
     if(NOT TARGET GTest::GTest)
+        include(FetchContent)
+
         # Prevent overriding the parent project's compiler/linker settings for Windows
         set(gtest_force_shared_crt ON CACHE BOOL
             "Use shared (DLL) run-time lib even when Google Test is built as static lib." FORCE)
@@ -210,7 +212,7 @@ if(WITH_GTEST)
             -fsanitize-memory-track-origins)
     endif()
 
-    if(NOT ZLIB_COMPAT AND DEFINED ZLIB_LIBRARIES AND DEFINED ZLIB_INCLUDE_DIR)
+    if(NOT ZLIB_COMPAT AND DEFINED ZLIB_LIBRARIES AND DEFINED ZLIB_INCLUDE_DIRS)
         if(NOT IS_ABSOLUTE ${ZLIB_LIBRARIES})
             get_filename_component(ZLIB_ABSOLUTE_PATH
                 "${CMAKE_CURRENT_SOURCE_DIR}/${ZLIB_LIBRARIES}"
@@ -222,11 +224,11 @@ if(WITH_GTEST)
         add_library(external_zlib STATIC IMPORTED)
         set_property(TARGET external_zlib PROPERTY IMPORTED_LOCATION ${ZLIB_ABSOLUTE_PATH})
         message(STATUS "Added dual linking tests against zlib")
-        message(STATUS "  Zlib include dir: ${ZLIB_INCLUDE_DIR}")
+        message(STATUS "  Zlib include dirs: ${ZLIB_INCLUDE_DIRS}")
         message(STATUS "  Zlib libraries: ${ZLIB_ABSOLUTE_PATH}")
 
         target_sources(gtest_zlib PRIVATE test_compress_dual.cc)
-        target_include_directories(gtest_zlib PRIVATE ${ZLIB_INCLUDE_DIR})
+        target_include_directories(gtest_zlib PRIVATE ${ZLIB_INCLUDE_DIRS})
         target_link_libraries(gtest_zlib external_zlib)
     endif()
 

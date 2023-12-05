@@ -12,7 +12,7 @@
 #include "../../zutil.h"
 #include "../../deflate.h"
 
-#if defined(ARM_NEON_SLIDEHASH)
+#if defined(ARM_NEON)
 #include "neon_intrins.h"
 
 /* SIMD version of hash_chain rebase */

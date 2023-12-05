@@ -9,7 +9,7 @@
 #include "../../zbuild.h"
 #include "../../zutil.h"
 
-#ifdef ARM_NEON_ADLER32
+#ifdef ARM_NEON
 #include "neon_intrins.h"
 #include "../../adler32_p.h"
 
@@ -144,7 +144,7 @@ static void NEON_handle_tail(uint32_t *pair, const uint8_t *buf, size_t len) {
     }
 }
 
-uint32_t adler32_neon(uint32_t adler, const uint8_t *buf, size_t len) {
+Z_INTERNAL uint32_t adler32_neon(uint32_t adler, const uint8_t *buf, size_t len) {
     /* split Adler-32 into component sums */
     uint32_t sum2 = (adler >> 16) & 0xffff;
     adler &= 0xffff;

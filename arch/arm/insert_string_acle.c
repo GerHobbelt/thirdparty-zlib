@@ -9,7 +9,7 @@
 #include "../../zutil.h"
 #include "../../deflate.h"
 
-#ifdef ARM_ACLE_CRC_HASH
+#ifdef ARM_ACLE
 #ifndef _MSC_VER
 #  include <arm_acle.h>
 #endif

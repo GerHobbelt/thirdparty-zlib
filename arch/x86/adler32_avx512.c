@@ -8,7 +8,7 @@
 
 #include "../../zutil.h"
 
-#ifdef X86_AVX512_ADLER32
+#ifdef X86_AVX512
 
 #include "adler32_avx512_tpl.h"
 

@@ -7,10 +7,10 @@
 #include <immintrin.h>
 #include "../../adler32_fold.h"
 #include "../../adler32_p.h"
-#include "../../fallback_builtins.h"
+#include "x86_intrins.h"
 #include "adler32_avx2_p.h"
 
-#ifdef X86_SSE42_ADLER32
+#ifdef X86_SSE42
 extern uint32_t adler32_fold_copy_sse42(uint32_t adler, uint8_t *dst, const uint8_t *src, size_t len);
 extern uint32_t adler32_ssse3(uint32_t adler, const uint8_t *src, size_t len);
 

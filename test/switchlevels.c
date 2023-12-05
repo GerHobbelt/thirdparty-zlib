@@ -115,7 +115,7 @@ done:
 
 static void show_help(void)
 {
-    printf("Usage: switchlevels [-w bits] level1 size1 [level2 size2 ...]\n\n" \
+    printf("Usage: switchlevels [-w bits] level1 size1 [level2 size2 ...]\n\n"
            "  -w : window bits (8 to 15 for gzip, -8 to -15 for zlib)\n\n");
 }
 

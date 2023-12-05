@@ -30,14 +30,9 @@ WFLAGS  = \
 	-DX86_FEATURES \
 	-DX86_PCLMULQDQ_CRC \
 	-DX86_SSE2 \
-	-DX86_SSE42_ADLER32 \
-	-DX86_SSE42_CRC_INTRIN \
-	-DX86_SSE42_CRC_HASH \
-	-DX86_SSSE3_ADLER32 \
-	-DX86_AVX2 \
-	-DX86_AVX2_ADLER32 \
-	-DX86_AVX_CHUNKSET \
-	-DX86_SSE2_CHUNKSET
+	-DX86_SSE42 \
+	-DX86_SSSE3 \
+	-DX86_AVX2
 
 LDFLAGS = -nologo -debug -incremental:no -opt:ref -manifest
 ARFLAGS = -nologo
@@ -58,8 +53,9 @@ OBJS = \
 	adler32_ssse3.obj \
 	adler32_fold.obj \
 	chunkset.obj \
-	chunkset_avx.obj \
+	chunkset_avx2.obj \
 	chunkset_sse2.obj \
+	chunkset_ssse3.obj \
 	compare256.obj \
 	compare256_avx2.obj \
 	compare256_sse2.obj \
@@ -68,7 +64,7 @@ OBJS = \
 	crc32_braid.obj \
 	crc32_braid_comb.obj \
 	crc32_fold.obj \
-	crc32_fold_pclmulqdq.obj \
+	crc32_pclmulqdq.obj \
 	deflate.obj \
 	deflate_fast.obj \
 	deflate_huff.obj \
@@ -204,13 +200,15 @@ gzwrite.obj: $(SRCDIR)/gzwrite.c $(SRCDIR)/zbuild.h $(SRCDIR)/gzguts.h $(SRCDIR)
 compress.obj: $(SRCDIR)/compress.c $(SRCDIR)/zbuild.h $(SRCDIR)/zlib$(SUFFIX).h
 uncompr.obj: $(SRCDIR)/uncompr.c $(SRCDIR)/zbuild.h $(SRCDIR)/zlib$(SUFFIX).h
 chunkset.obj: $(SRCDIR)/zbuild.h $(SRCDIR)/zutil.h
-chunkset_avx.obj: $(SRCDIR)/arch/x86/chunkset_avx.c $(SRCDIR)/zbuild.h $(SRCDIR)/zutil.h
+chunkset_avx2.obj: $(SRCDIR)/arch/x86/chunkset_avx2.c $(SRCDIR)/zbuild.h $(SRCDIR)/zutil.h
 chunkset_sse2.obj: $(SRCDIR)/arch/x86/chunkset_sse2.c $(SRCDIR)/zbuild.h $(SRCDIR)/zutil.h
+chunkset_ssse3.obj: $(SRCDIR)/arch/x86/chunkset_ssse3.c $(SRCDIR)/zbuild.h $(SRCDIR)/zutil.h
 cpu_features.obj: $(SRCDIR)/cpu_features.c $(SRCDIR)/zbuild.h $(SRCDIR)/zutil.h
 crc32_braid.obj: $(SRCDIR)/crc32_braid.c $(SRCDIR)/zbuild.h $(SRCDIR)/zendian.h $(SRCDIR)/deflate.h $(SRCDIR)/functable.h $(SRCDIR)/crc32_braid_p.h $(SRCDIR)/crc32_braid_tbl.h
 crc32_braid_comb.obj: $(SRCDIR)/crc32_braid_comb.c $(SRCDIR)/zbuild.h $(SRCDIR)/zutil.h $(SRCDIR)/crc32_braid_p.h $(SRCDIR)/crc32_braid_tbl.h $(SRCDIR)/crc32_braid_comb_p.h
 crc32_fold.obj: $(SRCDIR)/crc32_fold.c $(SRCDIR)/zbuild.h
-crc32_fold_pclmulqdq.obj: $(SRCDIR)/arch/x86/crc32_fold_pclmulqdq.c $(SRCDIR)/crc32_fold.h $(SRCDIR)/zbuild.h
+crc32_pclmulqdq.obj: $(SRCDIR)/arch/x86/crc32_pclmulqdq.c $(SRCDIR)/arch/x86/crc32_pclmulqdq_tpl.h $(SRCDIR)/arch/x86/crc32_fold_pclmulqdq_tpl.h \
+				 $(SRCDIR)/crc32_fold.h $(SRCDIR)/zbuild.h
 deflate.obj: $(SRCDIR)/deflate.c $(SRCDIR)/zbuild.h $(SRCDIR)/deflate.h $(SRCDIR)/deflate_p.h $(SRCDIR)/functable.h
 deflate_fast.obj: $(SRCDIR)/deflate_fast.c $(SRCDIR)/zbuild.h $(SRCDIR)/deflate.h $(SRCDIR)/deflate_p.h $(SRCDIR)/functable.h
 deflate_huff.obj: $(SRCDIR)/deflate_huff.c $(SRCDIR)/zbuild.h $(SRCDIR)/deflate.h $(SRCDIR)/deflate_p.h $(SRCDIR)/functable.h
