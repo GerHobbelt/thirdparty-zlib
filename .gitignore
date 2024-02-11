@@ -26,9 +26,6 @@
 /configure.log
 /build
 
-/contrib/vstudio/vc*/x64/*
-/contrib/vstudio/vc*/x86/*
-
 .DS_Store
 .vs
 *.user
