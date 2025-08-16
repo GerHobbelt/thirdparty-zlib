@@ -22,7 +22,9 @@ int main(int argc, const char** argv) {
     cpu_check_features(&test_cpu_features);
 #endif
     ::benchmark::Initialize(&argc, argv);
-    ::benchmark::RunSpecifiedBenchmarks();
+	if (::benchmark::ReportUnrecognizedArguments(argc, argv))
+		return 1;
+	::benchmark::RunSpecifiedBenchmarks();
 
     return EXIT_SUCCESS;
 }
