@@ -32,16 +32,22 @@ public:
     }
 
     // Benchmark CRC32_copy, with rolling buffer misalignment for consistent results
-    void Bench(benchmark::State& state, crc32_copy_func crc32_copy) {
+    void Bench(benchmark::State& state, crc32_copy_func crc32_copy, int do_aligned) {
         int misalign = 0;
         uint32_t hash = 0;
 
-        for (auto _ : state) {
-            hash = crc32_copy(hash, dstbuf + misalign, (const unsigned char*)testdata + misalign, (size_t)state.range(0));
-            if (misalign >= 63)
-                misalign = 0;
-            else
-                misalign++;
+        if (do_aligned){
+            for (auto _ : state) {
+                hash = crc32_copy(hash, dstbuf, (const unsigned char*)testdata, (size_t)state.range(0));
+            }
+        } else {
+            for (auto _ : state) {
+                hash = crc32_copy(hash, dstbuf + misalign, (const unsigned char*)testdata + misalign, (size_t)state.range(0));
+                if (misalign >= 63)
+                    misalign = 0;
+                else
+                    misalign++;
+            }
         }
 
         // Prevent the result from being optimized away
@@ -54,14 +60,33 @@ public:
     }
 };
 
-#define BENCHMARK_CRC32_COPY(name, copyfunc, support_flag) \
+// Misaligned
+#define BENCHMARK_CRC32_COPY_MISALIGNED(name, copyfunc, support_flag) \
     BENCHMARK_DEFINE_F(crc32_copy, name)(benchmark::State& state) { \
         if (!(support_flag)) { \
             state.SkipWithError("CPU does not support " #name); \
         } \
-        Bench(state, copyfunc); \
+        Bench(state, copyfunc, 0); \
     } \
     BENCHMARK_REGISTER_F(crc32_copy, name)->Arg(3)->Arg(16)->Arg(48)->Arg(192)->Arg(512)->Arg(4<<10)->Arg(16<<10)->Arg(32<<10)->Arg(64<<10);
+
+// Aligned
+#define ALIGNED_SUFFIX _aligned
+#define ALIGNED_NAME_IMPL(name) name##ALIGNED_SUFFIX
+#define ALIGNED_NAME(name) ALIGNED_NAME_IMPL(name)
+#define BENCHMARK_CRC32_COPY_ALIGNED(name, copyfunc, support_flag) \
+    BENCHMARK_DEFINE_F(crc32_copy, ALIGNED_NAME(name))(benchmark::State& state) { \
+        if (!(support_flag)) { \
+            state.SkipWithError("CPU does not support " #name); \
+        } \
+        Bench(state, copyfunc, 1); \
+    } \
+    BENCHMARK_REGISTER_F(crc32_copy, name)->Arg(16)->Arg(32)->Arg(64)->Arg(512);
+
+// Queue both misaligned and aligned for each benchmark
+#define BENCHMARK_CRC32_COPY(name, copyfunc, support_flag) \
+    BENCHMARK_CRC32_COPY_MISALIGNED(name, copyfunc, support_flag); \
+    BENCHMARK_CRC32_COPY_ALIGNED(name, copyfunc, support_flag);
 
 // Base test
 BENCHMARK_CRC32_COPY(braid, crc32_copy_braid, 1);
