@@ -12,7 +12,7 @@ extern "C" {
 #  include "../test_cpu_features.h"
 }
 
-#define BUFSIZE (32768 + 16 + 16)
+#define BUFSIZE (65536 + 64)
 
 class crc32_copy: public benchmark::Fixture {
 protected:
@@ -20,30 +20,32 @@ protected:
     uint8_t *dstbuf;
 
 public:
-    void SetUp(const ::benchmark::State&) {
+    void SetUp(::benchmark::State& state) {
         testdata = (uint32_t *)malloc(BUFSIZE);
         dstbuf = (uint8_t *)malloc(BUFSIZE);
-        assert((testdata != NULL) && (dstbuf != NULL));
+        if(testdata == NULL || dstbuf == NULL)
+            state.SkipWithError("malloc failed");
 
         for (uint32_t i = 0; i < BUFSIZE/sizeof(uint32_t); i++) {
             testdata[i] = rand();
         }
     }
 
+    // Benchmark CRC32_copy, with rolling buffer misalignment for consistent results
     void Bench(benchmark::State& state, crc32_copy_func crc32_copy) {
         int misalign = 0;
-        uint32_t crc = 0;
+        uint32_t hash = 0;
 
-        // Benchmark the CRC32 copy operation
         for (auto _ : state) {
-            crc = crc32_copy(crc, dstbuf + misalign, (const unsigned char*)testdata + misalign, (size_t)state.range(0));
-            misalign++;
-            if (misalign > 14)
+            hash = crc32_copy(hash, dstbuf + misalign, (const unsigned char*)testdata + misalign, (size_t)state.range(0));
+            if (misalign >= 63)
                 misalign = 0;
+            else
+                misalign++;
         }
 
         // Prevent the result from being optimized away
-        benchmark::DoNotOptimize(crc);
+        benchmark::DoNotOptimize(hash);
     }
 
     void TearDown(const ::benchmark::State&) {
@@ -59,7 +61,7 @@ public:
         } \
         Bench(state, copyfunc); \
     } \
-    BENCHMARK_REGISTER_F(crc32_copy, name)->Arg(16)->Arg(48)->Arg(192)->Arg(512)->Arg(4<<10)->Arg(16<<10)->Arg(32<<10);
+    BENCHMARK_REGISTER_F(crc32_copy, name)->Arg(3)->Arg(16)->Arg(48)->Arg(192)->Arg(512)->Arg(4<<10)->Arg(16<<10)->Arg(32<<10)->Arg(64<<10);
 
 // Base test
 BENCHMARK_CRC32_COPY(braid, crc32_copy_braid, 1);
