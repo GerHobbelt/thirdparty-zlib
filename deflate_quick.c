@@ -29,7 +29,7 @@ extern const ct_data static_dtree[D_CODES];
 
 #define QUICK_START_BLOCK(s, last) { \
     zng_tr_emit_tree(s, STATIC_TREES, last); \
-    s->block_open = 1 + (int)last; \
+    s->block_open = 1 + last; \
     s->block_start = (int)s->strstart; \
 }
 
@@ -45,12 +45,7 @@ extern const ct_data static_dtree[D_CODES];
 }
 
 Z_INTERNAL block_state deflate_quick(deflate_state *s, int flush) {
-    Pos hash_head;
-    int64_t dist;
-    unsigned match_len, last;
-
-
-    last = (flush == Z_FINISH) ? 1 : 0;
+    unsigned last = (flush == Z_FINISH) ? 1 : 0;
     if (UNLIKELY(last && s->block_open != 2)) {
         /* Emit end of previous block */
         QUICK_END_BLOCK(s, 0);
@@ -63,6 +58,8 @@ Z_INTERNAL block_state deflate_quick(deflate_state *s, int flush) {
     }
 
     for (;;) {
+        uint8_t lc;
+
         if (UNLIKELY(s->pending + ((BIT_BUF_SIZE + 7) >> 3) >= s->pending_buf_size)) {
             PREFIX(flush_pending)(s->strm);
             if (s->strm->avail_out == 0) {
@@ -86,15 +83,26 @@ Z_INTERNAL block_state deflate_quick(deflate_state *s, int flush) {
         }
 
         if (LIKELY(s->lookahead >= WANT_MIN_MATCH)) {
-            hash_head = quick_insert_string(s, s->strstart);
-            dist = (int64_t)s->strstart - hash_head;
+#if BYTE_ORDER == LITTLE_ENDIAN
+            uint32_t str_val = zng_memread_4(&s->window[s->strstart]);
+#else
+            uint32_t str_val = ZSWAP32(zng_memread_4(&s->window[s->strstart]));
+#endif
+            Pos hash_head = quick_insert_value(s, s->strstart, str_val);
+            int64_t dist = (int64_t)s->strstart - hash_head;
+            lc = (uint8_t)str_val;
 
             if (dist <= MAX_DIST(s) && dist > 0) {
-                const uint8_t *str_start = s->window + s->strstart;
                 const uint8_t *match_start = s->window + hash_head;
+#if BYTE_ORDER == LITTLE_ENDIAN
+                uint32_t match_val = zng_memread_4(match_start);
+#else
+                uint32_t match_val = ZSWAP32(zng_memread_4(match_start));
+#endif
 
-                if (zng_memcmp_2(str_start, match_start) == 0) {
-                    match_len = FUNCTABLE_CALL(compare256)(str_start+2, match_start+2) + 2;
+                if (str_val == match_val) {
+                    const uint8_t *str_start = s->window + s->strstart;
+                    uint32_t match_len = FUNCTABLE_CALL(compare256)(str_start+2, match_start+2) + 2;
 
                     if (match_len >= WANT_MIN_MATCH) {
                         if (UNLIKELY(match_len > s->lookahead))
@@ -112,9 +120,10 @@ Z_INTERNAL block_state deflate_quick(deflate_state *s, int flush) {
                     }
                 }
             }
+        } else {
+            lc = s->window[s->strstart];
         }
-
-        zng_tr_emit_lit(s, static_ltree, s->window[s->strstart]);
+        zng_tr_emit_lit(s, static_ltree, lc);
         s->strstart++;
         s->lookahead--;
     }
