@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.5.1)
 if(CMAKE_VERSION VERSION_LESS 3.12)
     cmake_policy(VERSION ${CMAKE_VERSION})
 else()
-    cmake_policy(VERSION 3.5.1...3.13.2)
+    cmake_policy(VERSION 3.5.1...3.29.0)
 endif()
 message(STATUS "Using CMake version ${CMAKE_VERSION}")
 
@@ -342,6 +342,14 @@ if(HAVE_SYS_SDT_H)
     add_definitions(-DHAVE_SYS_SDT_H)
 endif()
 check_include_file(unistd.h    HAVE_UNISTD_H)
+
+#
+# Check for Linux includes
+#
+check_include_file(linux/auxvec.h HAVE_LINUX_AUXVEC_H)
+if(HAVE_LINUX_AUXVEC_H)
+    add_definitions(-DHAVE_LINUX_AUXVEC_H)
+endif()
 
 #
 # Check for Linux includes
@@ -1115,7 +1123,7 @@ foreach(ZLIB_INSTALL_LIBRARY ${ZLIB_INSTALL_LIBRARIES})
         target_compile_definitions(${ZLIB_INSTALL_LIBRARY} PUBLIC ZLIBNG_NATIVE_API)
     endif()
     target_include_directories(${ZLIB_INSTALL_LIBRARY} PUBLIC
-        "$<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR};${CMAKE_CURRENT_SOURCE_DIR}>"
+        "$<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}$<SEMICOLON>${CMAKE_CURRENT_SOURCE_DIR}>"
         "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>")
 endforeach()
 
