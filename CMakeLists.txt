@@ -102,7 +102,7 @@ set_property(CACHE WITH_SANITIZER PROPERTY STRINGS "Memory" "Address" "Undefined
 if(BASEARCH_ARM_FOUND)
     option(WITH_ACLE "Build with ACLE" ON)
     option(WITH_NEON "Build with NEON intrinsics" ON)
-    option(WITH_ARMV6 "Build with ARMv6 SIMD" ON)
+    cmake_dependent_option(WITH_ARMV6 "Build with ARMv6 SIMD" ON "NOT ARCH STREQUAL \"aarch64\"" OFF)
 elseif(BASEARCH_PPC_FOUND)
     option(WITH_ALTIVEC "Build with AltiVec (VMX) optimisations for PowerPC" ON)
     option(WITH_POWER8 "Build with optimisations for POWER8" ON)
@@ -197,6 +197,15 @@ elseif(CMAKE_C_COMPILER_ID MATCHES "GNU" OR CMAKE_C_COMPILER_ID MATCHES "Clang")
     set(WARNFLAGS -Wall)
     set(WARNFLAGS_MAINTAINER -Wextra)
     set(WARNFLAGS_DISABLE)
+    # Check whether -fno-lto is available
+    set(CMAKE_REQUIRED_FLAGS "-fno-lto")
+    check_c_source_compiles(
+        "int main() { return 0; }"
+        FNO_LTO_AVAILABLE FAIL_REGEX "not supported")
+    set(CMAKE_REQUIRED_FLAGS)
+    if(FNO_LTO_AVAILABLE)
+        set(ZNOLTOFLAG "-fno-lto")
+    endif()
     if(NOT WITH_NATIVE_INSTRUCTIONS)
         if(BASEARCH_ARM_FOUND)
             if("${ARCH}" MATCHES "arm" AND NOT CMAKE_C_FLAGS MATCHES "-mfloat-abi")
@@ -230,14 +239,9 @@ elseif(CMAKE_C_COMPILER_ID MATCHES "GNU" OR CMAKE_C_COMPILER_ID MATCHES "Clang")
                 endif()
             endif()
         endif()
-        # Check whether -fno-lto is available
-        set(CMAKE_REQUIRED_FLAGS "-fno-lto")
-        check_c_source_compiles(
-            "int main() { return 0; }"
-            FNO_LTO_AVAILABLE FAIL_REGEX "not supported")
-        set(CMAKE_REQUIRED_FLAGS)
+        # Disable LTO unless Native Instructions are enabled
         if(FNO_LTO_AVAILABLE)
-            set(NOLTOFLAG "-fno-lto")
+            set(NOLTOFLAG ${ZNOLTOFLAG})
         endif()
     endif()
     if(MINGW)
@@ -252,11 +256,18 @@ endif()
 # Set native march/mcpu
 if(WITH_NATIVE_INSTRUCTIONS)
     if(CMAKE_C_COMPILER_ID MATCHES "GNU" OR CMAKE_C_COMPILER_ID MATCHES "Clang")
-        if(BASEARCH_PPC_FOUND)
-            set(NATIVEFLAG "-mcpu=native")
-        else()
+        check_c_compiler_flag(-march=native HAVE_MARCH_NATIVE)
+        if(HAVE_MARCH_NATIVE)
             set(NATIVEFLAG "-march=native")
+        else()
+            check_c_compiler_flag(-mcpu=native HAVE_MCPU_NATIVE)
+            if(HAVE_MCPU_NATIVE)
+                set(NATIVEFLAG "-mcpu=native")
+            endif()
         endif()
+        # Fall through
+    endif()
+    if(NATIVEFLAG)
         # Apply flag to all source files and compilation checks
         add_compile_options(${NATIVEFLAG})
     else()
@@ -414,21 +425,6 @@ check_c_source_compiles(
     HAVE_ATTRIBUTE_ALIGNED FAIL_REGEX "aligned")
 if(HAVE_ATTRIBUTE_ALIGNED)
     add_definitions(-DHAVE_ATTRIBUTE_ALIGNED)
-endif()
-
-#
-# check for _Thread_local() support in the compiler
-#
-check_c_source_compiles(
-    "_Thread_local int test;
-    int main(void) {
-        (void)test;
-        return 0;
-    }"
-    HAVE_THREAD_LOCAL
-)
-if(HAVE_THREAD_LOCAL)
-    add_definitions(-DHAVE_THREAD_LOCAL)
 endif()
 
 #
