@@ -1,5 +1,5 @@
 # Makefile for zlib
-# Copyright (C) 1995-2016 Jean-loup Gailly, Mark Adler
+# Copyright (C) 1995-2024 Jean-loup Gailly, Mark Adler
 # For conditions of distribution and use, see copyright notice in zlib.h
 
 # To compile and test, type:
@@ -85,7 +85,7 @@ OBJZ = \
 	adler32.o \
 	compress.o \
 	cpu_features.o \
-	crc32_braid.o \
+	crc32.o \
 	crc32_braid_comb.o \
 	deflate.o \
 	deflate_fast.o \
@@ -125,7 +125,7 @@ PIC_OBJZ = \
 	adler32.lo \
 	compress.lo \
 	cpu_features.lo \
-	crc32_braid.lo \
+	crc32.lo \
 	crc32_braid_comb.lo \
 	deflate.lo \
 	deflate_fast.lo \
@@ -366,6 +366,7 @@ uninstall: uninstall-static uninstall-shared
 mostlyclean: clean
 clean:
 	@if [ -f $(ARCHDIR)/Makefile ]; then $(MAKE) -C $(ARCHDIR) clean; fi
+	@if [ -f arch/generic/Makefile ]; then $(MAKE) -C arch/generic clean; fi
 	@if [ -f test/Makefile ]; then $(MAKE) -C test clean; fi
 	rm -f *.o *.lo *~ \
 	   example$(EXE) minigzip$(EXE) minigzipsh$(EXE) \

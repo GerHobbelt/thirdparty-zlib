@@ -41,6 +41,13 @@ jobs:
             cmake-args: -DWITH_NATIVE_INSTRUCTIONS=ON
             codecov: ubuntu_gcc_native_inst
 
+          - name: Ubuntu GCC Native Instructions (AVX)
+            os: ubuntu-latest
+            compiler: gcc
+            cxx-compiler: g++
+            cmake-args: -DWITH_NATIVE_INSTRUCTIONS=ON -DNATIVE_ARCH_OVERRIDE="-mavx -mpclmul"
+            codecov: ubuntu_gcc_native_inst
+
           - name: Ubuntu GCC Symbol Prefix
             os: ubuntu-latest
             compiler: gcc
@@ -445,7 +452,6 @@ jobs:
             os: ubuntu-latest
             cmake-args: -GNinja -DCMAKE_TOOLCHAIN_FILE=./cmake/toolchain-riscv.cmake -DTOOLCHAIN_PATH=${PWD}/prebuilt-riscv-toolchain-qemu/riscv-clang -DQEMU_PATH=${PWD}/prebuilt-riscv-toolchain-qemu/riscv-qemu/bin/qemu-riscv64
             packages: build-essential cmake ninja-build
-            codecov: ubuntu_clang_toolchain_riscv
 
           - name: Ubuntu Emscripten WASM32
             os: ubuntu-latest
@@ -598,7 +604,7 @@ jobs:
 
     - name: Install Emscripten
       if: contains(matrix.name, 'WASM32')
-      uses: mymindstorm/setup-emsdk@v12
+      uses: mymindstorm/setup-emsdk@v14
 
     - name: Initialize Wine
       # Prevent parallel test jobs from initializing Wine at the same time
@@ -714,7 +720,7 @@ jobs:
         echo "CODECOV_REPORTS=`ls -p *.xml | grep -v / | tr '\n' ','`" >> $GITHUB_ENV
 
     - name: Upload reports
-      uses: codecov/codecov-action@v3
+      uses: codecov/codecov-action@v4
       if: (env.CODECOV_TOKEN != '' || github.repository == 'zlib-ng/zlib-ng')
       with:
         token: ${{ secrets.CODECOV_TOKEN || 'e4fdf847-f541-4ab1-9d50-3d27e5913906' }}

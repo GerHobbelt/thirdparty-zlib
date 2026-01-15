@@ -22,6 +22,12 @@
 #  define GZIP
 #endif
 
+/* define LIT_MEM to slightly increase the speed of deflate (order 1% to 2%) at
+   the cost of a larger memory footprint */
+#ifndef NO_LIT_MEM
+#  define LIT_MEM
+#endif
+
 /* ===========================================================================
  * Internal compression state.
  */
@@ -111,7 +117,7 @@ typedef uint32_t (* update_hash_cb)        (deflate_state *const s, uint32_t h, 
 typedef void     (* insert_string_cb)      (deflate_state *const s, uint32_t str, uint32_t count);
 typedef Pos      (* quick_insert_string_cb)(deflate_state *const s, uint32_t str);
 
-struct internal_state {
+struct ALIGNED_(16) internal_state {
     PREFIX3(stream)      *strm;            /* pointer back to this zlib stream */
     unsigned char        *pending_buf;     /* output still pending */
     unsigned char        *pending_out;     /* next pending byte to output to the stream */
@@ -259,8 +265,16 @@ struct internal_state {
      *   - I can't count above 4
      */
 
+#ifdef LIT_MEM
+#   define LIT_BUFS 5
+    uint16_t *d_buf;              /* buffer for distances */
+    unsigned char *l_buf;         /* buffer for literals/lengths */
+#else
+#   define LIT_BUFS 4
     unsigned char *sym_buf;       /* buffer for distances and literals/lengths */
-    unsigned int sym_next;        /* running index in sym_buf */
+#endif
+
+    unsigned int sym_next;        /* running index in symbol buffer */
     unsigned int sym_end;         /* symbol table full when sym_next reaches this */
 
     unsigned long opt_len;        /* bit length of current block with optimal trees */
@@ -283,7 +297,7 @@ struct internal_state {
 
     /* Reserved for future use and alignment purposes */
     int32_t reserved[11];
-} ALIGNED_(8);
+};
 
 typedef enum {
     need_more,      /* block not completed, need more input or more output */
