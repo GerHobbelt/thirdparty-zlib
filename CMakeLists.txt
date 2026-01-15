@@ -802,6 +802,54 @@ if(WITH_OPTIM)
                 endif()
             endif()
         endif()
+        if(${CMAKE_SYSTEM_NAME} STREQUAL "FreeBSD" OR
+           ${CMAKE_SYSTEM_NAME} STREQUAL "OpenBSD")
+            if("${ARCH}" MATCHES "aarch64")
+                check_c_source_compiles(
+                    "#include <sys/auxv.h>
+                    int main() {
+                        unsigned long hwcap;
+                        elf_aux_info(AT_HWCAP, &hwcap, sizeof(hwcap));
+                        return (hwcap & HWCAP_CRC32);
+                    }"
+                    ARM_AUXV_HAS_CRC32
+                )
+                if(ARM_AUXV_HAS_CRC32)
+                    add_definitions(-DARM_AUXV_HAS_CRC32)
+                else()
+                    message(STATUS "HWCAP_CRC32 not present in sys/auxv.h; cannot detect support at runtime.")
+                endif()
+            else()
+                check_c_source_compiles(
+                    "#include <sys/auxv.h>
+                    int main() {
+                        unsigned long hwcap2;
+                        elf_aux_info(AT_HWCAP2, &hwcap2, sizeof(hwcap2));
+                        return (hwcap2 & HWCAP2_CRC32);
+                    }"
+                    ARM_AUXV_HAS_CRC32
+                )
+                if(ARM_AUXV_HAS_CRC32)
+                    add_definitions(-DARM_AUXV_HAS_CRC32)
+                else()
+                    message(STATUS "HWCAP2_CRC32 not present in sys/auxv.h; cannot detect support at runtime.")
+                endif()
+                check_c_source_compiles(
+                    "#include <sys/auxv.h>
+                    int main() {
+                      unsigned long hwcap;
+                      elf_aux_info(AT_HWCAP, &hwcap, sizeof(hwcap));
+                      return (hwcap & HWCAP_NEON);
+                    }"
+                    ARM_AUXV_HAS_NEON
+                )
+                if(ARM_AUXV_HAS_NEON)
+                    add_definitions(-DARM_AUXV_HAS_NEON)
+                else()
+                    message(STATUS "HWCAP_NEON not present in sys/auxv.h; cannot detect support at runtime.")
+                endif()
+            endif()
+        endif()
         list(APPEND ZLIB_ARCH_HDRS ${ARCHDIR}/arm_functions.h)
         if(WITH_RUNTIME_CPU_DETECTION)
             list(APPEND ZLIB_ARCH_HDRS ${ARCHDIR}/arm_features.h)
@@ -1318,7 +1366,6 @@ set(ZLIB_SRCS
 
 set(ZLIB_ALL_FALLBACK_SRCS
     arch/generic/adler32_c.c
-    arch/generic/adler32_fold_c.c
     arch/generic/chunkset_c.c
     arch/generic/compare256_c.c
     arch/generic/crc32_braid_c.c
@@ -1333,7 +1380,6 @@ elseif(${ARCH} STREQUAL "x86_64" AND WITH_SSE2)
     # x86_64 always has SSE2, so let the SSE2 functions act as fallbacks.
     list(APPEND ZLIB_GENERIC_SRCS
         arch/generic/adler32_c.c
-        arch/generic/adler32_fold_c.c
         arch/generic/crc32_braid_c.c
         arch/generic/crc32_fold_c.c
     )
