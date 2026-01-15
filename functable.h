@@ -7,8 +7,8 @@
 #define FUNCTABLE_H_
 
 #include "deflate.h"
-#include "crc32_fold.h"
-#include "adler32_fold.h"
+#include "crc32_fold_c.h"
+#include "adler32_fold_c.h"
 
 #ifdef ZLIB_COMPAT
 typedef struct z_stream_s z_stream;

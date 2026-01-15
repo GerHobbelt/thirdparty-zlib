@@ -74,15 +74,19 @@ man3dir = ${mandir}/man3
 pkgconfigdir = ${libdir}/pkgconfig
 
 OBJZ = \
+	arch/generic/adler32_c.o \
+	arch/generic/adler32_fold_c.o \
+	arch/generic/chunkset_c.o \
+	arch/generic/compare256_c.o \
+	arch/generic/crc32_braid_c.o \
+	arch/generic/crc32_fold_c.o \
+	arch/generic/insert_string_c.o \
+	arch/generic/slide_hash_c.o \
 	adler32.o \
-	adler32_fold.o \
-	chunkset.o \
-	compare256.o \
 	compress.o \
 	cpu_features.o \
 	crc32_braid.o \
 	crc32_braid_comb.o \
-	crc32_fold.o \
 	deflate.o \
 	deflate_fast.o \
 	deflate_huff.o \
@@ -95,9 +99,7 @@ OBJZ = \
 	infback.o \
 	inflate.o \
 	inftrees.o \
-	insert_string.o \
 	insert_string_roll.o \
-	slide_hash.o \
 	trees.o \
 	uncompr.o \
 	zutil.o \
@@ -112,15 +114,19 @@ TESTOBJG =
 OBJC = $(OBJZ) $(OBJG)
 
 PIC_OBJZ = \
+	arch/generic/adler32_c.lo \
+	arch/generic/adler32_fold_c.lo \
+	arch/generic/chunkset_c.lo \
+	arch/generic/compare256_c.lo \
+	arch/generic/crc32_braid_c.lo \
+	arch/generic/crc32_fold_c.lo \
+	arch/generic/insert_string_c.lo \
+	arch/generic/slide_hash_c.lo \
 	adler32.lo \
-	adler32_fold.lo \
-	chunkset.lo \
-	compare256.lo \
 	compress.lo \
 	cpu_features.lo \
 	crc32_braid.lo \
 	crc32_braid_comb.lo \
-	crc32_fold.lo \
 	deflate.lo \
 	deflate_fast.lo \
 	deflate_huff.lo \
@@ -133,9 +139,7 @@ PIC_OBJZ = \
 	infback.lo \
 	inflate.lo \
 	inftrees.lo \
-	insert_string.lo \
 	insert_string_roll.lo \
-	slide_hash.lo \
 	trees.lo \
 	uncompr.lo \
 	zutil.lo \
@@ -168,6 +172,12 @@ $(ARCHDIR)/%.o: $(SRCDIR)/$(ARCHDIR)/%.c
 
 $(ARCHDIR)/%.lo: $(SRCDIR)/$(ARCHDIR)/%.c
 	$(MAKE) -C $(ARCHDIR) $(notdir $@)
+
+arch/generic/%.o: $(SRCDIR)/arch/generic/%.c
+	$(MAKE) -C arch/generic $(notdir $@)
+
+arch/generic/%.lo: $(SRCDIR)/arch/generic/%.c
+	$(MAKE) -C arch/generic $(notdir $@)
 
 %.o: $(ARCHDIR)/%.o
 	-cp $< $@

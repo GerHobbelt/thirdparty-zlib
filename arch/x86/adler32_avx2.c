@@ -9,10 +9,9 @@
 
 #ifdef X86_AVX2
 
-#include "../../zbuild.h"
+#include "zbuild.h"
 #include <immintrin.h>
-#include "../../adler32_fold.h"
-#include "../../adler32_p.h"
+#include "adler32_p.h"
 #include "adler32_avx2_p.h"
 #include "x86_intrins.h"
 

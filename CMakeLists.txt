@@ -977,6 +977,8 @@ set(ZLIB_PUBLIC_HDRS
     ${CMAKE_CURRENT_BINARY_DIR}/zlib${SUFFIX}.h
 )
 set(ZLIB_PRIVATE_HDRS
+    arch/generic/adler32_fold_c.h
+    arch/generic/crc32_fold_c.h
     adler32_p.h
     chunkset_tpl.h
     compare256_rle.h
@@ -984,7 +986,6 @@ set(ZLIB_PRIVATE_HDRS
     crc32_braid_p.h
     crc32_braid_comb_p.h
     crc32_braid_tbl.h
-    crc32_fold.h
     deflate.h
     deflate_p.h
     functable.h
@@ -1003,15 +1004,19 @@ set(ZLIB_PRIVATE_HDRS
     zutil.h
 )
 set(ZLIB_SRCS
+    arch/generic/adler32_c.c
+    arch/generic/adler32_fold_c.c
+    arch/generic/chunkset_c.c
+    arch/generic/compare256_c.c
+    arch/generic/crc32_braid_c.c
+    arch/generic/crc32_fold_c.c
+    arch/generic/insert_string_c.c
+    arch/generic/slide_hash_c.c
     adler32.c
-    adler32_fold.c
-    chunkset.c
-    compare256.c
     compress.c
     cpu_features.c
     crc32_braid.c
     crc32_braid_comb.c
-    crc32_fold.c
     deflate.c
     deflate_fast.c
     deflate_huff.c
@@ -1024,9 +1029,7 @@ set(ZLIB_SRCS
     infback.c
     inflate.c
     inftrees.c
-    insert_string.c
     insert_string_roll.c
-    slide_hash.c
     trees.c
     uncompr.c
     zutil.c
@@ -1066,6 +1069,10 @@ else()
 
     set(ZLIB_INSTALL_LIBRARIES zlib)
 endif()
+
+include_directories(${CMAKE_CURRENT_SOURCE_DIR})
+include_directories(${ARCHDIR})
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/arch/generic)
 
 foreach(ZLIB_INSTALL_LIBRARY ${ZLIB_INSTALL_LIBRARIES})
     if(NOT ZLIB_COMPAT)

@@ -104,26 +104,26 @@ jobs:
             cmake-args: -DWITH_OPTIM=OFF -DHAVE_BUILTIN_CTZLL=OFF -DHAVE_BUILTIN_CTZ=OFF
             codecov: ubuntu_gcc_no_ctz
 
-          - name: Ubuntu GCC No AVX2 UBSAN
+          - name: Ubuntu GCC SSE2 UBSAN
             os: ubuntu-latest
             compiler: gcc
             cxx-compiler: g++
-            cmake-args: -DWITH_AVX2=OFF -DWITH_SANITIZER=Undefined
-            codecov: ubuntu_gcc_no_avx2
+            cmake-args: -DWITH_SSSE3=OFF -DWITH_SSE42=OFF -DWITH_AVX2=OFF -DWITH_AVX512=OFF -DWITH_SANITIZER=Undefined
+            codecov: ubuntu_gcc_sse2
 
-          - name: Ubuntu GCC No SSE2 UBSAN
+          - name: Ubuntu GCC SSSE3 UBSAN
             os: ubuntu-latest
             compiler: gcc
             cxx-compiler: g++
-            cmake-args: -DWITH_SSE2=OFF -DWITH_SANITIZER=Undefined
-            codecov: ubuntu_gcc_no_sse2
+            cmake-args: -DWITH_SSE42=OFF -DWITH_AVX2=OFF -DWITH_AVX512=OFF -DWITH_SANITIZER=Undefined
+            codecov: ubuntu_gcc_ssse3
 
-          - name: Ubuntu GCC No SSE4.2 UBSAN
+          - name: Ubuntu GCC SSE4.2 UBSAN
             os: ubuntu-latest
             compiler: gcc
             cxx-compiler: g++
-            cmake-args: -DWITH_SSE42=OFF -DWITH_SANITIZER=Undefined
-            codecov: ubuntu_gcc_no_sse42
+            cmake-args: -DWITH_AVX2=OFF -DWITH_AVX512=OFF -DWITH_SANITIZER=Undefined
+            codecov: ubuntu_gcc_sse42
 
           - name: Ubuntu GCC No PCLMULQDQ UBSAN
             os: ubuntu-latest
@@ -299,32 +299,41 @@ jobs:
             parallels-jobs: 4
 
           - name: Ubuntu GCC S390X DFLTCC ASAN
-            os: z15
+            os: ${{ github.repository == 'zlib-ng/zlib-ng' && 'z15' || 'ubuntu-latest' }}
             compiler: gcc
             cxx-compiler: g++
-            cmake-args: -DWITH_DFLTCC_DEFLATE=ON -DWITH_DFLTCC_INFLATE=ON -DWITH_SANITIZER=Address
+            cmake-args: >-
+              ${{ github.repository != 'zlib-ng/zlib-ng' && '-DCMAKE_TOOLCHAIN_FILE=cmake/toolchain-s390x.cmake' || '' }}
+              -DWITH_DFLTCC_DEFLATE=ON -DWITH_DFLTCC_INFLATE=ON -DWITH_SANITIZER=Address
+            packages: qemu qemu-user gcc-s390x-linux-gnu g++-s390x-linux-gnu libc-dev-s390x-cross
             asan-options: detect_leaks=0
             ldflags: -static
             codecov: ubuntu_gcc_s390x_dfltcc
-            # The dedicated test VM has 4 cores
+            # The dedicated z15 test VM has 4 cores
             parallels-jobs: 4
 
-          - name: Ubuntu GCC S390X DFLTCC Compat UBSAN
-            os: z15
+          - name: Ubuntu GCC S390X DFLTCC UBSAN
+            os: ${{ github.repository == 'zlib-ng/zlib-ng' && 'z15' || 'ubuntu-latest' }}
             compiler: gcc
             cxx-compiler: g++
-            cmake-args: -DZLIB_COMPAT=ON -DWITH_DFLTCC_DEFLATE=ON -DWITH_DFLTCC_INFLATE=ON -DWITH_SANITIZER=Undefined
+            cmake-args: >-
+              ${{ github.repository != 'zlib-ng/zlib-ng' && '-DCMAKE_TOOLCHAIN_FILE=cmake/toolchain-s390x.cmake' || '' }}
+              -DWITH_DFLTCC_DEFLATE=ON -DWITH_DFLTCC_INFLATE=ON -DWITH_SANITIZER=Undefined
+            packages: qemu qemu-user gcc-s390x-linux-gnu g++-s390x-linux-gnu libc-dev-s390x-cross
             ldflags: -static
-            codecov: ubuntu_gcc_s390x_dfltcc_compat
-            # The dedicated test VM has 4 cores
+            codecov: ubuntu_gcc_s390x_dfltcc_ubsan
+            # The dedicated z15 test VM has 4 cores
             parallels-jobs: 4
 
-          - name: Ubuntu Clang S390X DFLTCC MSAN
-            os: z15
+          - name: Ubuntu Clang S390X DFLTCC ${{ (github.repository == 'zlib-ng/zlib-ng' && 'MSAN') || 'Compat' }}
+            os: ${{ github.repository == 'zlib-ng/zlib-ng' && 'z15' || 'ubuntu-latest' }}
             compiler: clang-11
             cxx-compiler: clang++-11
-            cmake-args: -GNinja -DWITH_DFLTCC_DEFLATE=ON -DWITH_DFLTCC_INFLATE=ON -DWITH_SANITIZER=Memory
-            # The dedicated test VM has 4 cores
+            cmake-args: >-
+              ${{ github.repository != 'zlib-ng/zlib-ng' && '-DCMAKE_TOOLCHAIN_FILE=cmake/toolchain-s390x.cmake -DZLIB_COMPAT=ON' || '-GNinja -DWITH_SANITIZER=Memory' }}
+              -DWITH_DFLTCC_DEFLATE=ON -DWITH_DFLTCC_INFLATE=ON
+            packages: qemu qemu-user gcc-s390x-linux-gnu g++-s390x-linux-gnu libc-dev-s390x-cross
+            # The dedicated z15 test VM has 4 cores
             parallels-jobs: 4
 
           - name: Ubuntu MinGW i686
@@ -535,7 +544,7 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v4
       with:
-        show-progress: 'false'
+        show-progress: false
 
     - name: Checkout test corpora
       uses: actions/checkout@v4
@@ -545,22 +554,22 @@ jobs:
       with:
         repository: zlib-ng/corpora
         path: test/data/corpora
-        show-progress: 'false'
+        show-progress: false
 
     - name: Add repositories (Wine)
       if: contains(matrix.packages, 'wine32')
       run: sudo dpkg --add-architecture i386
 
     - name: Add ubuntu mirrors
-      if: runner.os == 'Linux' && matrix.packages
+      if: runner.os == 'Linux' && matrix.packages && !contains(matrix.os, 'z15')
+      # Github Actions caching proxy is at times unreliable
       run: |
-        # Github Actions caching proxy is at times unreliable
         echo -e 'http://azure.archive.ubuntu.com/ubuntu\tpriority:1\n' | sudo tee /etc/apt/mirrors.txt
         curl http://mirrors.ubuntu.com/mirrors.txt | sudo tee --append /etc/apt/mirrors.txt
         sudo sed -i 's#http://azure.archive.ubuntu.com/ubuntu/#mirror+file:/etc/apt/mirrors.txt#' /etc/apt/sources.list
 
     - name: Install packages (Ubuntu)
-      if: runner.os == 'Linux' && matrix.packages
+      if: runner.os == 'Linux' && matrix.packages && !contains(matrix.os, 'z15')
       run: |
         sudo apt-get update
         sudo apt-get install -y --allow-downgrades --no-install-recommends ${{ matrix.packages }}
@@ -662,23 +671,18 @@ jobs:
           --exclude-unreachable-branches \
           --gcov-executable "${{ matrix.gcov-exec || 'gcov' }}" \
           --root ${{ matrix.build-src-dir || '.' }} \
-          --xml --output coverage.xml
+          --xml --output ${{ matrix.codecov }}.xml
 
-    - name: Upload coverage report
-      uses: codecov/codecov-action@v3
-      if: matrix.codecov && (env.CODECOV_TOKEN != '' || github.repository == 'zlib-ng/zlib-ng')
+    - name: Upload coverage report artifact
+      uses: actions/upload-artifact@v4
+      if: matrix.codecov
       with:
-        token: ${{ secrets.CODECOV_TOKEN || 'e4fdf847-f541-4ab1-9d50-3d27e5913906' }}
-        flags: ${{ matrix.codecov }}
-        name: ${{ matrix.name }}
-        directory: ${{ matrix.build-src-dir || '.' }}
-        verbose: true
-        fail_ci_if_error: true
-      env:
-        CODECOV_TOKEN: "${{secrets.CODECOV_TOKEN}}"
+        name: ${{ matrix.name }} (coverage)
+        path: ${{ matrix.codecov }}.xml
+        retention-days: 1
 
     - name: Upload build errors
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       if: failure()
       with:
         name: ${{ matrix.name }} (cmake)
@@ -688,3 +692,35 @@ jobs:
           **/Testing/Temporary/*
           coverage.xml
         retention-days: 30
+
+  coverage:
+    name: Upload Coverage Reports
+    runs-on: ubuntu-latest
+    needs: cmake
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        show-progress: false
+
+    - name: Download all reports
+      uses: actions/download-artifact@v4
+      with:
+        merge-multiple: true
+
+    - name: Display all coverage artifacts
+      run: |
+        ls -R *.xml
+        echo "CODECOV_REPORTS=`ls -p *.xml | grep -v / | tr '\n' ','`" >> $GITHUB_ENV
+
+    - name: Upload reports
+      uses: codecov/codecov-action@v3
+      if: (env.CODECOV_TOKEN != '' || github.repository == 'zlib-ng/zlib-ng')
+      with:
+        token: ${{ secrets.CODECOV_TOKEN || 'e4fdf847-f541-4ab1-9d50-3d27e5913906' }}
+        files: ${{ env.CODECOV_REPORTS }}
+        name: cmake-umbrella
+        verbose: true
+        fail_ci_if_error: true
+      env:
+        CODECOV_TOKEN: "${{secrets.CODECOV_TOKEN}}"
