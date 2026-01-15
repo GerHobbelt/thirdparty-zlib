@@ -203,6 +203,7 @@ int ZEXPORT inflateInit2_(z_streamp strm, int windowBits,
     state->strm = strm;
     state->window = Z_NULL;
     state->mode = HEAD;     /* to pass state test in inflateReset2() */
+    state->check = 1L;      /* 1L is the result of adler32() zero length data */
     ret = inflateReset2(strm, windowBits);
     if (ret != Z_OK) {
         ZFREE(strm, state);
@@ -539,6 +540,8 @@ int ZEXPORT inflate(z_streamp strm, int flush) {
             len = BITS(4) + 8;
             if (state->wbits == 0)
                 state->wbits = len;
+            if (len < state->wbits)
+                len = state->wbits;
             if (len > 15 || len > state->wbits) {
                 strm->msg = (z_const char *)"invalid window size";
                 state->mode = BAD;
@@ -1023,13 +1026,15 @@ int ZEXPORT inflate(z_streamp strm, int flush) {
             if (state->offset > copy) {         /* copy from window */
                 copy = state->offset - copy;
                 if (copy > state->whave) {
+                	if (!inflate_allow_distance_too_far_back) {
                     if (state->sane) {
                         strm->msg = (z_const char *)
                             "invalid distance too far back";
                         state->mode = BAD;
                         break;
                     }
-#ifdef INFLATE_ALLOW_INVALID_DISTANCE_TOOFAR_ARRR
+                    }
+                    else {
                     Trace((stderr, "inflate.c too far\n"));
                     copy -= state->whave;
                     if (copy > state->length) copy = state->length;
@@ -1041,7 +1046,7 @@ int ZEXPORT inflate(z_streamp strm, int flush) {
                     } while (--copy);
                     if (state->length == 0) state->mode = LEN;
                     break;
-#endif
+                    }
                 }
                 if (copy > state->wnext) {
                     copy -= state->wnext;
@@ -1097,7 +1102,7 @@ int ZEXPORT inflate(z_streamp strm, int flush) {
         case LENGTH:
             if (state->wrap && state->flags) {
                 NEEDBITS(32);
-                if ((state->wrap & 4) && hold != (state->total & 0xffffffff)) {
+                if ((state->wrap & 4) && hold != (state->total & 0xffffffffUL)) {
                     strm->msg = (z_const char *)"incorrect length check";
                     state->mode = BAD;
                     break;
@@ -1372,14 +1377,15 @@ int ZEXPORT inflateUndermine(z_streamp strm, int subvert) {
 
     if (inflateStateCheck(strm)) return Z_STREAM_ERROR;
     state = (struct inflate_state FAR *)strm->state;
-#ifdef INFLATE_ALLOW_INVALID_DISTANCE_TOOFAR_ARRR
+	if(inflate_allow_distance_too_far_back) {
     state->sane = !subvert;
     return Z_OK;
-#else
+    }
+    else{
     (void)subvert;
     state->sane = 1;
     return Z_DATA_ERROR;
-#endif
+    }
 }
 
 int ZEXPORT inflateValidate(z_streamp strm, int check) {

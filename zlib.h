@@ -48,6 +48,10 @@ extern "C" {
 #define ZLIB_VER_REVISION 1
 #define ZLIB_VER_SUBREVISION 2
 
+#ifdef _DEBUG
+#define ZLIB_DEBUG
+#endif
+
 /*
     The 'zlib' compression library provides in-memory compression and
   decompression functions, including integrity checks of the uncompressed data.

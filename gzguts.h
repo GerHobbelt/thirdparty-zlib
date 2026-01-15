@@ -203,6 +203,10 @@ typedef struct {
 } gz_state;
 typedef gz_state FAR *gz_statep;
 
+#ifndef EWOULDBLOCK
+#define EWOULDBLOCK EAGAIN
+#endif
+
 /* shared functions */
 void ZLIB_INTERNAL gz_error(gz_statep, int, const char *);
 #if defined UNDER_CE

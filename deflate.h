@@ -25,7 +25,7 @@
 
 /* define LIT_MEM to slightly increase the speed of deflate (order 1% to 2%) at
    the cost of a larger memory footprint */
-/* #define LIT_MEM */
+#define LIT_MEM
 
 /* ===========================================================================
  * Internal compression state.
@@ -365,7 +365,7 @@ void ZLIB_INTERNAL _tr_stored_block(deflate_state *s, charf *buf,
 # define _tr_tally_dist(s, distance, length, flush) \
   { uch len = (uch)(length); \
     ush dist = (ush)(distance); \
-    s->sym_buf[s->sym_next++] = (uch)dist; \
+    s->sym_buf[s->sym_next++] = (uch)(dist); \
     s->sym_buf[s->sym_next++] = (uch)(dist >> 8); \
     s->sym_buf[s->sym_next++] = len; \
     dist--; \

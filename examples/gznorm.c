@@ -123,7 +123,7 @@ local int gzip_normalize(FILE *in, FILE *out, char **err) {
         int prev;                   // number of bits from previous block in
                                     // the bit buffer, or -1 if not at the
                                     // start of a block
-        unsigned long long memb;    // uncompressed length of member
+        unsigned __int64 memb;    // uncompressed length of member
         size_t tail;                // number of trailer bytes read (0..8)
         unsigned long part;         // accumulated trailer component
 
@@ -394,7 +394,7 @@ local int gzip_normalize(FILE *in, FILE *out, char **err) {
                         if (tail == 4) {
                             // Update the total CRC.
                             z_off_t len2 = memb;
-                            if (len2 < 0 || (unsigned long long)len2 != memb)
+                            if (len2 < 0 || (unsigned __int64)len2 != memb)
                                 BYE("overflow error");
                             crc = crc ? crc32_combine(crc, part, len2) : part;
                             part = 0;
