@@ -1171,7 +1171,7 @@ static void lm_init(deflate_state *s) {
  */
 
 void Z_INTERNAL PREFIX(fill_window)(deflate_state *s) {
-    PREFIX3(stream)      *strm = s->strm;
+    PREFIX3(stream) *strm = s->strm;
     insert_string_cb insert_string_func;
     unsigned char *window = s->window;
     unsigned n;
