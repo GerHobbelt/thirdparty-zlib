@@ -54,12 +54,12 @@ jobs:
 
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
       with:
         show-progress: 'false'
 
     - name: Checkout test corpora
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
       with:
         repository: zlib-ng/corpora
         path: test/data/corpora
@@ -113,7 +113,7 @@ jobs:
           --xml --output ${{ matrix.codecov }}.xml
 
     - name: Upload coverage report artifact
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v5
       if: matrix.codecov
       with:
         name: ${{ matrix.name }} (coverage)
@@ -121,7 +121,7 @@ jobs:
         retention-days: 1
 
     - name: Upload build errors
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v5
       if: failure()
       with:
         name: ${{ matrix.name }} (cmake)
@@ -139,12 +139,12 @@ jobs:
     if: cancelled() == false
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
       with:
         show-progress: false
 
     - name: Download all reports
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v6
       with:
         merge-multiple: true
 

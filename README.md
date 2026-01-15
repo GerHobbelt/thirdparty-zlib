@@ -1,6 +1,6 @@
 | CI | Stable | Develop |
 |:---|:-------|:--------|
-| GitHub Actions | [![Stable CMake](https://github.com/zlib-ng/zlib-ng/actions/workflows/cmake.yml/badge.svg?branch=stable)](https://github.com/zlib-ng/zlib-ng/actions/workflows/cmake.yml?query=branch%3Astable) <br> [![Stable Configure](https://github.com/zlib-ng/zlib-ng/actions/workflows/configure.yml/badge.svg?branch=stable)](https://github.com/zlib-ng/zlib-ng/actions/workflows/configure.yml?query=branch%3Astable) <br> [![Stable NMake](https://github.com/zlib-ng/zlib-ng/actions/workflows/nmake.yml/badge.svg?branch=stable)](https://github.com/zlib-ng/zlib-ng/actions/workflows/nmake.yml?query=branch%3Astable) | [![Develop CMake](https://github.com/zlib-ng/zlib-ng/actions/workflows/cmake.yml/badge.svg?branch=develop)](https://github.com/zlib-ng/zlib-ng/actions/workflows/cmake.yml?query=branch%3Adevelop) <br> [![Develop Configure](https://github.com/zlib-ng/zlib-ng/actions/workflows/configure.yml/badge.svg?branch=develop)](https://github.com/zlib-ng/zlib-ng/actions/workflows/configure.yml?query=branch%3Adevelop) <br> [![Develop NMake](https://github.com/zlib-ng/zlib-ng/actions/workflows/nmake.yml/badge.svg?branch=develop)](https://github.com/zlib-ng/zlib-ng/actions/workflows/nmake.yml?query=branch%3Adevelop) |
+| GitHub Actions | [![Stable CMake](https://github.com/zlib-ng/zlib-ng/actions/workflows/cmake.yml/badge.svg?branch=stable)](https://github.com/zlib-ng/zlib-ng/actions/workflows/cmake.yml?query=branch%3Astable) <br> [![Stable Configure](https://github.com/zlib-ng/zlib-ng/actions/workflows/configure.yml/badge.svg?branch=stable)](https://github.com/zlib-ng/zlib-ng/actions/workflows/configure.yml?query=branch%3Astable) | [![Develop CMake](https://github.com/zlib-ng/zlib-ng/actions/workflows/cmake.yml/badge.svg?branch=develop)](https://github.com/zlib-ng/zlib-ng/actions/workflows/cmake.yml?query=branch%3Adevelop) <br> [![Develop Configure](https://github.com/zlib-ng/zlib-ng/actions/workflows/configure.yml/badge.svg?branch=develop)](https://github.com/zlib-ng/zlib-ng/actions/workflows/configure.yml?query=branch%3Adevelop) |
 | CodeFactor     | [![CodeFactor](https://www.codefactor.io/repository/github/zlib-ng/zlib-ng/badge/stable)](https://www.codefactor.io/repository/github/zlib-ng/zlib-ng/overview/stable) | [![CodeFactor](https://www.codefactor.io/repository/github/zlib-ng/zlib-ng/badge/develop)](https://www.codefactor.io/repository/github/zlib-ng/zlib-ng/overview/develop) |
 | OSS-Fuzz       | [![Fuzzing Status](https://oss-fuzz-build-logs.storage.googleapis.com/badges/zlib-ng.svg)](https://bugs.chromium.org/p/oss-fuzz/issues/list?sort=-opened&can=1&q=proj:zlib-ng) | [![Fuzzing Status](https://oss-fuzz-build-logs.storage.googleapis.com/badges/zlib-ng.svg)](https://bugs.chromium.org/p/oss-fuzz/issues/list?sort=-opened&can=1&q=proj:zlib-ng) |
 | Codecov        | [![codecov](https://codecov.io/github/zlib-ng/zlib-ng/branch/stable/graph/badge.svg?token=uKsgK9LIuC)](https://codecov.io/github/zlib-ng/zlib-ng/tree/stable) | [![codecov](https://codecov.io/github/zlib-ng/zlib-ng/branch/develop/graph/badge.svg?token=uKsgK9LIuC)](https://codecov.io/github/zlib-ng/zlib-ng/tree/develop) |
@@ -19,19 +19,19 @@ Features
 * Modern C11 syntax and a clean code layout
 * Deflate medium and quick algorithms based on Intel’s zlib fork
 * Support for CPU intrinsics when available
-  * Adler32 implementation using SSSE3, AVX2, AVX512, AVX512-VNNI, Neon, VMX & VSX
-  * CRC32-B implementation using PCLMULQDQ, VPCLMULQDQ, ACLE, & IBM Z
-  * Slide hash implementations using SSE2, AVX2, ARMv6, Neon, VMX & VSX
-  * Compare256 implementations using SSE2, AVX2, Neon, POWER9 & RVV
-  * Inflate chunk copying using SSE2, SSSE3, AVX, Neon & VSX
+  * Adler32 implementation using SSSE3, AVX2, AVX512, AVX512-VNNI, Neon, VMX & VSX, LSX, LASX
+  * CRC32-B implementation using PCLMULQDQ, VPCLMULQDQ, ARMv8, & IBM Z, LoongArch
+  * Slide hash implementations using SSE2, AVX2, ARMv6, Neon, VMX & VSX, LSX, LASX
+  * Compare256 implementations using SSE2, AVX2, Neon, POWER9 & RVV, LSX, LASX
+  * Inflate chunk copying using SSE2, SSSE3, AVX, Neon & VSX, LSX, LASX
   * Support for hardware-accelerated deflate using IBM Z DFLTCC
 * Safe unaligned memory read/writes and large bit buffer improvements
 * Includes improvements from Cloudflare and Intel forks
-* Configure, CMake, and NMake build system support
+* Configure and CMake build system support
 * Comprehensive set of CMake unit tests
 * Code sanitizers, fuzzing, and coverage
 * GitHub Actions continuous integration on Windows, macOS, and Linux
-  * Emulated CI for ARM, AARCH64, PPC, PPC64, RISCV, SPARC64, S390x using qemu
+  * Emulated CI for ARM, AARCH64, LoongArch, PPC, PPC64, RISCV, SPARC64, S390x using qemu
 
 
 History
@@ -195,7 +195,6 @@ Advanced Build Options
 
 | CMake                           | configure             | Description                                                         | Default                |
 |:--------------------------------|:----------------------|:--------------------------------------------------------------------|------------------------|
-| FORCE_SSE2                      | --force-sse2          | Skip runtime check for SSE2 instructions (Always on for x86_64)     | OFF (x86)              |
 | WITH_AVX2                       |                       | Build with AVX2 intrinsics                                          | ON                     |
 | WITH_AVX512                     |                       | Build with AVX512 intrinsics                                        | ON                     |
 | WITH_AVX512VNNI                 |                       | Build with AVX512VNNI intrinsics                                    | ON                     |
@@ -204,7 +203,7 @@ Advanced Build Options
 | WITH_SSE42                      |                       | Build with SSE42 intrinsics                                         | ON                     |
 | WITH_PCLMULQDQ                  |                       | Build with PCLMULQDQ intrinsics                                     | ON                     |
 | WITH_VPCLMULQDQ                 | --without-vpclmulqdq  | Build with VPCLMULQDQ intrinsics                                    | ON                     |
-| WITH_ACLE                       | --without-acle        | Build with ACLE intrinsics                                          | ON                     |
+| WITH_ARMV8                      | --without-armv8       | Build with ARMv8 intrinsics                                         | ON                     |
 | WITH_NEON                       | --without-neon        | Build with NEON intrinsics                                          | ON                     |
 | WITH_ARMV6                      | --without-armv6       | Build with ARMv6 intrinsics                                         | ON                     |
 | WITH_ALTIVEC                    | --without-altivec     | Build with AltiVec (VMX) intrinsics                                 | ON                     |
@@ -217,6 +216,7 @@ Advanced Build Options
 | WITH_INFLATE_ALLOW_INVALID_DIST |                       | Build with zero fill for inflate invalid distances                  | OFF                    |
 | INSTALL_UTILS                   |                       | Copy minigzip and minideflate during install                        | OFF                    |
 | ZLIBNG_ENABLE_TESTS             |                       | Test zlib-ng specific API                                           | ON                     |
+| WITH_ALL_FALLBACKS              |                       | Build with all c-fallbacks (useful for Gbench comparisons)          | OFF                    |
 
 
 Related Projects

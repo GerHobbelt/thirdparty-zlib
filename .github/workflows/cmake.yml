@@ -86,6 +86,25 @@ jobs:
             packages: gcc-multilib g++-multilib
             codecov: ubuntu_gcc_m32
 
+          - name: Ubuntu GCC C17
+            os: ubuntu-latest
+            compiler: gcc
+            cxx-compiler: g++
+            cmake-args: -DCMAKE_C_STANDARD=17
+
+          - name: Ubuntu GCC C23
+            os: ubuntu-latest
+            compiler: gcc
+            cxx-compiler: g++
+            cmake-args: -DCMAKE_C_STANDARD=23
+
+          - name: Ubuntu GCC No Chorba
+            os: ubuntu-latest
+            compiler: gcc
+            cxx-compiler: g++
+            cmake-args: -DWITH_CHORBA=OFF
+            codecov: ubuntu_gcc_no_chorba
+
           - name: Ubuntu GCC No CTZLL
             os: ubuntu-latest
             compiler: gcc
@@ -160,13 +179,13 @@ jobs:
             gcov-exec: arm-linux-gnueabihf-gcov
             codecov: ubuntu_gcc_armhf
 
-          - name: Ubuntu GCC ARM HF No ACLE ASAN
+          - name: Ubuntu GCC ARM HF No ARMv8 ASAN
             os: ubuntu-latest
-            cmake-args: -DCMAKE_TOOLCHAIN_FILE=cmake/toolchain-armhf.cmake -DWITH_ACLE=OFF -DWITH_SANITIZER=Address
+            cmake-args: -DCMAKE_TOOLCHAIN_FILE=cmake/toolchain-armhf.cmake -DWITH_ARMV8=OFF -DWITH_SANITIZER=Address
             asan-options: detect_leaks=0
             packages: qemu-user crossbuild-essential-armhf
             gcov-exec: arm-linux-gnueabihf-gcov
-            codecov: ubuntu_gcc_armhf_no_acle
+            codecov: ubuntu_gcc_armhf_no_armv8
 
           - name: Ubuntu GCC ARM HF No NEON ASAN
             os: ubuntu-latest
@@ -191,12 +210,12 @@ jobs:
             gcov-exec: aarch64-linux-gnu-gcov
             codecov: ubuntu_gcc_aarch64
 
-          - name: Ubuntu GCC AARCH64 No ACLE UBSAN
+          - name: Ubuntu GCC AARCH64 No ARMv8 UBSAN
             os: ubuntu-22.04
-            cmake-args: -DCMAKE_TOOLCHAIN_FILE=cmake/toolchain-aarch64.cmake -DWITH_ACLE=OFF -DWITH_SANITIZER=Undefined
+            cmake-args: -DCMAKE_TOOLCHAIN_FILE=cmake/toolchain-aarch64.cmake -DWITH_ARMV8=OFF -DWITH_SANITIZER=Undefined
             packages: qemu-user gcc-aarch64-linux-gnu g++-aarch64-linux-gnu libc-dev-arm64-cross
             gcov-exec: aarch64-linux-gnu-gcov
-            codecov: ubuntu_gcc_aarch64_no_acle
+            codecov: ubuntu_gcc_aarch64_no_armv8
 
           - name: Ubuntu GCC AARCH64 No NEON UBSAN
             os: ubuntu-22.04
@@ -303,6 +322,22 @@ jobs:
             cmake-args: -DCMAKE_TOOLCHAIN_FILE=cmake/toolchain-riscv-clang.cmake
             packages: qemu-user crossbuild-essential-riscv64
 
+          - name: Ubuntu GCC 14 LoongArch64 LSX
+            os: ubuntu-latest
+            cmake-args: -DCMAKE_TOOLCHAIN_FILE=cmake/toolchain-loongarch64-gcc-14.cmake -DWITH_BENCHMARKS=ON -DWITH_LASX=OFF
+            packages: qemu-user gcc-14-loongarch64-linux-gnu g++-14-loongarch64-linux-gnu libc-dev-loong64-cross
+            ldflags: -static
+            gcov-exec: loongarch64-linux-gnu-gcov-14
+            codecov: ubuntu_gcc14_loongarch64_lsx
+
+          - name: Ubuntu GCC 14 LoongArch64
+            os: ubuntu-latest
+            cmake-args: -DCMAKE_TOOLCHAIN_FILE=cmake/toolchain-loongarch64-gcc-14.cmake -DWITH_BENCHMARKS=ON
+            packages: qemu-user gcc-14-loongarch64-linux-gnu g++-14-loongarch64-linux-gnu libc-dev-loong64-cross
+            ldflags: -static
+            gcov-exec: loongarch64-linux-gnu-gcov-14
+            codecov: ubuntu_gcc14_loongarch64
+
           - name: Ubuntu GCC SPARC64
             os: ubuntu-latest
             cmake-args: -DCMAKE_TOOLCHAIN_FILE=cmake/toolchain-sparc64.cmake
@@ -329,7 +364,7 @@ jobs:
             gcov-exec: s390x-linux-gnu-gcov
             codecov: ubuntu_gcc_s390x_no_crc32
 
-          - name: ${{ github.repository == 'zlib-ng/zlib-ng' && 'EL9' || 'Ubuntu' }} GCC S390X DFLTCC ASAN
+          - name: ${{ github.repository == 'zlib-ng/zlib-ng' && 'EL10' || 'Ubuntu' }} GCC S390X DFLTCC ASAN
             os: ${{ github.repository == 'zlib-ng/zlib-ng' && 'z15' || 'ubuntu-latest' }}
             compiler: gcc
             cxx-compiler: g++
@@ -340,11 +375,11 @@ jobs:
             asan-options: detect_leaks=0
             ldflags: -static
             gcov-exec: ${{ github.repository == 'zlib-ng/zlib-ng' && 'gcov' || 's390x-linux-gnu-gcov' }}
-            codecov: ${{ github.repository == 'zlib-ng/zlib-ng' && 'el9_gcc_s390x_dfltcc' || 'ubuntu_gcc_s390x_dfltcc' }}
+            codecov: ${{ github.repository == 'zlib-ng/zlib-ng' && 'el10_gcc_s390x_dfltcc' || 'ubuntu_gcc_s390x_dfltcc' }}
             # The dedicated z15 test VM has 4 cores
             parallels-jobs: 4
 
-          - name: ${{ github.repository == 'zlib-ng/zlib-ng' && 'EL9' || 'Ubuntu' }} GCC S390X DFLTCC UBSAN
+          - name: ${{ github.repository == 'zlib-ng/zlib-ng' && 'EL10' || 'Ubuntu' }} GCC S390X DFLTCC UBSAN
             os: ${{ github.repository == 'zlib-ng/zlib-ng' && 'z15' || 'ubuntu-latest' }}
             compiler: gcc
             cxx-compiler: g++
@@ -354,11 +389,11 @@ jobs:
             packages: qemu-user gcc-s390x-linux-gnu g++-s390x-linux-gnu libc-dev-s390x-cross
             ldflags: -static
             gcov-exec: ${{ github.repository == 'zlib-ng/zlib-ng' && 'gcov' || 's390x-linux-gnu-gcov' }}
-            codecov: ${{ github.repository == 'zlib-ng/zlib-ng' && 'el9_gcc_s390x_dfltcc' || 'ubuntu_gcc_s390x_dfltcc' }}
+            codecov: ${{ github.repository == 'zlib-ng/zlib-ng' && 'el10_gcc_s390x_dfltcc' || 'ubuntu_gcc_s390x_dfltcc' }}
             # The dedicated z15 test VM has 4 cores
             parallels-jobs: 4
 
-          - name: ${{ github.repository == 'zlib-ng/zlib-ng' && 'EL9' || 'Ubuntu' }} Clang S390X DFLTCC ${{ (github.repository == 'zlib-ng/zlib-ng' && 'MSAN') || 'Compat' }}
+          - name: ${{ github.repository == 'zlib-ng/zlib-ng' && 'EL10' || 'Ubuntu' }} Clang S390X DFLTCC ${{ (github.repository == 'zlib-ng/zlib-ng' && 'MSAN') || 'Compat' }}
             os: ${{ github.repository == 'zlib-ng/zlib-ng' && 'z15' || 'ubuntu-latest' }}
             compiler: ${{ github.repository == 'zlib-ng/zlib-ng' && 'clang' || 'clang-15' }}
             cxx-compiler: ${{ github.repository == 'zlib-ng/zlib-ng' && 'clang++' || 'clang++-15' }}
@@ -398,6 +433,20 @@ jobs:
             packages: clang-15 llvm-15 llvm-15-tools
             gcov-exec: llvm-cov-15 gcov
             codecov: ubuntu_clang
+
+          - name: Ubuntu Clang C17
+            os: ubuntu-latest
+            compiler: clang-15
+            cxx-compiler: clang++-15
+            cmake-args: -DCMAKE_C_STANDARD=17
+            packages: clang-15 llvm-15 llvm-15-tools
+
+          - name: Ubuntu Clang C23
+            os: ubuntu-latest
+            compiler: clang-18
+            cxx-compiler: clang++-18
+            cmake-args: -DCMAKE_C_STANDARD=23
+            packages: clang-18 llvm-18 llvm-18-tools
 
           # Check for undefined symbols in the version script for the modern api
           - name: Ubuntu Clang Undefined Symbols
@@ -492,6 +541,11 @@ jobs:
             compiler: cl
             cmake-args: -G "Visual Studio 17 2022" -A x64 -T v143 -DWITH_NATIVE_INSTRUCTIONS=ON -DNATIVE_ARCH_OVERRIDE=/arch:AVX
 
+          - name: Windows MSVC 2022 v143 Win64 C17
+            os: windows-latest
+            compiler: cl
+            cmake-args: -G "Visual Studio 17 2022" -A x64 -T v143 -DCMAKE_C_STANDARD=17
+
           - name: Windows MSVC 2022 v142 Win32
             os: windows-latest
             compiler: cl
@@ -564,15 +618,15 @@ jobs:
             cmake-args: -G Ninja -DZLIB_COMPAT=ON -DWITH_NEW_STRATEGIES=OFF -DWITH_OPTIM=OFF
             codecov: win64_gcc_compat_no_opt
 
-          - name: macOS Clang (Target 10.10)
-            os: macos-13
+          - name: macOS Clang (Intel, Target 10.10)
+            os: macos-15-intel
             compiler: clang
             cxx-compiler: clang++
             cmake-args: -DCMAKE_OSX_DEPLOYMENT_TARGET=10.10 -DWITH_BENCHMARKS=ON
             ldflags: -ld_classic
 
-          - name: macOS Clang ASAN
-            os: macos-13
+          - name: macOS Clang ASAN (Intel)
+            os: macos-15-intel
             compiler: clang
             cxx-compiler: clang++
             cmake-args: -DWITH_SANITIZER=Address
@@ -585,20 +639,17 @@ jobs:
             cmake-args: -DWITH_SANITIZER=Address
             codecov: macos_clang_arm64
 
-          - name: macOS GCC UBSAN
-            os: macos-13
-            compiler: gcc-10
-            cxx-compiler: g++-10
-            # Xcode 15 uses a new linker that is not compatible with GCC. Switch to the old linker.
-            # Homebrew gcc@11 and later have a built-in workaround for it.
-            ldflags: -ld_classic
+          - name: macOS GCC UBSAN (Intel)
+            os: macos-15-intel
+            compiler: gcc-13
+            cxx-compiler: g++-13
             cmake-args: -DWITH_SANITIZER=Undefined
-            packages: gcc@10
-            gcov-exec: gcov-10
+            packages: gcc@13
+            gcov-exec: gcov-13
             codecov: macos_gcc
 
           - name: macOS GCC UBSAN (ARM64)
-            os: macos-latest
+            os: macos-14
             compiler: gcc-13
             cxx-compiler: g++-13
             cmake-args: -DWITH_SANITIZER=Undefined
@@ -606,20 +657,26 @@ jobs:
             gcov-exec: gcov-13
             codecov: macos_gcc_arm64
 
+          - name: macOS Clang Native Instructions (Intel)
+            os: macos-15-intel
+            compiler: clang
+            cxx-compiler: clang++
+            cmake-args: -DWITH_NATIVE_INSTRUCTIONS=ON
+
           - name: macOS Clang Native Instructions (ARM64)
-            os: macos-14
+            os: macos-latest
             compiler: clang
             cxx-compiler: clang++
             cmake-args: -DWITH_NATIVE_INSTRUCTIONS=ON
 
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
       with:
         show-progress: false
 
     - name: Checkout test corpora
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
       # Don't test against all corpora with MinGW due to Wine being unable to run parallel jobs
       # without connection timeout. Without parallel jobs test runs using Wine take close to an hour.
       if: contains(matrix.name, 'MinGW') == false
@@ -688,6 +745,15 @@ jobs:
         # should be run twice
         $process = Start-Process -FilePath cmd.exe -ArgumentList $Arguments -Wait -PassThru -WindowStyle Hidden
         $process = Start-Process -FilePath cmd.exe -ArgumentList $Arguments -Wait -PassThru -WindowStyle Hidden
+
+    - name: Install Windows 11 SDK (ARM)
+      if: contains(matrix.name, 'MSVC ARM ')
+      run: |
+        # Windows 11 SDK (10.0.22621.2428)
+        # https://developer.microsoft.com/en-us/windows/downloads/sdk-archive/index-legacy
+        Invoke-WebRequest -Method Get -Uri https://go.microsoft.com/fwlink/p/?LinkId=2250105 -OutFile sdksetup.exe -UseBasicParsing
+        Unblock-File sdksetup.exe
+        Start-Process -Wait sdksetup.exe -ArgumentList "/q", "/norestart", "/ceip off"
 
     - name: Install packages (macOS)
       if: runner.os == 'macOS'
@@ -779,7 +845,7 @@ jobs:
           --xml --output ${{ matrix.codecov }}.xml
 
     - name: Upload coverage report artifact
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v5
       if: matrix.codecov
       with:
         name: ${{ matrix.name }} (coverage)
@@ -798,7 +864,7 @@ jobs:
         UBSAN_OPTIONS: ${{ matrix.ubsan-options || 'verbosity=0' }}:print_stacktrace=1:abort_on_error=1:halt_on_error=1
 
     - name: Upload build errors
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v5
       if: failure()
       with:
         name: ${{ matrix.name }} (cmake)
@@ -816,12 +882,12 @@ jobs:
     if: cancelled() == false
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
       with:
         show-progress: false
 
     - name: Download all reports
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v6
       with:
         merge-multiple: true
 
