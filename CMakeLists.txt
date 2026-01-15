@@ -1,9 +1,5 @@
-cmake_minimum_required(VERSION 3.14...3.31.0)
+cmake_minimum_required(VERSION 3.14...4.2.1)
 message(STATUS "Using CMake version ${CMAKE_VERSION}")
-
-if(POLICY CMP0169)
-    cmake_policy(SET CMP0169 OLD) # CMake 3.30: call FetchContent_Populate() with just the name of a dependency
-endif()
 
 # If not specified on the command line, enable C11 as the default
 # Configuration items that affect the global compiler environment standards
@@ -1443,7 +1439,7 @@ set(ZLIB_GZFILE_PRIVATE_HDRS
 )
 set(ZLIB_GZFILE_SRCS
     gzlib.c
-    ${CMAKE_CURRENT_BINARY_DIR}/gzread.c
+    gzread.c
     gzwrite.c
 )
 
@@ -1600,8 +1596,8 @@ configure_file(${CMAKE_CURRENT_BINARY_DIR}/zconf${SUFFIX}.h.cmakein
     ${CMAKE_CURRENT_BINARY_DIR}/zconf${SUFFIX}.h @ONLY)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/zlib${SUFFIX}.h.in
     ${CMAKE_CURRENT_BINARY_DIR}/zlib${SUFFIX}.h @ONLY)
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/gzread.c.in
-    ${CMAKE_CURRENT_BINARY_DIR}/gzread.c @ONLY)
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/gzread_mangle.h.in
+    ${CMAKE_CURRENT_BINARY_DIR}/gzread_mangle.h @ONLY)
 
 if (NOT ZLIB_SYMBOL_PREFIX STREQUAL "")
     add_feature_info(ZLIB_SYMBOL_PREFIX ON "Publicly exported symbols have a custom prefix")
