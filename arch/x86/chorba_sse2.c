@@ -1,4 +1,4 @@
-#if !defined(WITHOUT_CHORBA) && defined(X86_SSE2)
+#if defined(X86_SSE2) && !defined(WITHOUT_CHORBA_SSE)
 
 #include "zbuild.h"
 #include "crc32_braid_p.h"
@@ -6,10 +6,7 @@
 #include "crc32.h"
 #include <emmintrin.h>
 #include "arch/x86/x86_intrins.h"
-#include "arch/generic/generic_functions.h"
-#include <assert.h>
-
-uint32_t crc32_braid_base(uint32_t c, const uint8_t *buf, size_t len);
+#include "arch_functions.h"
 
 #define READ_NEXT(in, off, a, b) do { \
         a = _mm_load_si128((__m128i*)(in + off / sizeof(uint64_t))); \
@@ -850,27 +847,26 @@ Z_INTERNAL uint32_t chorba_small_nondestructive_sse2(uint32_t crc, const uint64_
 }
 
 Z_INTERNAL uint32_t crc32_chorba_sse2(uint32_t crc, const uint8_t *buf, size_t len) {
-    uint32_t c;
     uint64_t* aligned_buf;
-    size_t aligned_len;
+    uint32_t c = (~crc) & 0xffffffff;
+    uintptr_t algn_diff = ((uintptr_t)16 - ((uintptr_t)buf & 15)) & 15;
 
-    c = (~crc) & 0xffffffff;
-    unsigned long algn_diff = ((uintptr_t)16 - ((uintptr_t)buf & 15)) & 15;
-    if (algn_diff < len) {
+    if (len > algn_diff + CHORBA_SMALL_THRESHOLD_64BIT) {
         if (algn_diff) {
             c = crc32_braid_internal(c, buf, algn_diff);
+            len -= algn_diff;
         }
         aligned_buf = (uint64_t*) (buf + algn_diff);
-        aligned_len = len - algn_diff;
-        if(aligned_len > CHORBA_LARGE_THRESHOLD) {
-            c = crc32_chorba_118960_nondestructive(c, (z_word_t*) aligned_buf, aligned_len);
-        } else if (aligned_len > 72) {
-            c = chorba_small_nondestructive_sse2(c, aligned_buf, aligned_len);
-        } else {
-            c = crc32_braid_internal(c, (uint8_t*) aligned_buf, aligned_len);
+#if !defined(WITHOUT_CHORBA)
+        if(len > CHORBA_LARGE_THRESHOLD) {
+            c = crc32_chorba_118960_nondestructive(c, (z_word_t*) aligned_buf, len);
+        } else
+#endif
+        {
+            c = chorba_small_nondestructive_sse2(c, aligned_buf, len);
         }
-    }
-    else {
+    } else {
+        // Process too short lengths using crc32_braid
         c = crc32_braid_internal(c, buf, len);
     }
 

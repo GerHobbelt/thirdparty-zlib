@@ -13,9 +13,11 @@
 #define CHORBA_MEDIUM_UPPER_THRESHOLD 32768
 #define CHORBA_MEDIUM_LOWER_THRESHOLD 8192
 #define CHORBA_SMALL_THRESHOLD_64BIT 72
-#define CHORBA_SMALL_THRESHOLD_32BIT 80
-
-Z_INTERNAL uint32_t crc32_braid_internal(uint32_t c, const uint8_t *buf, size_t len);
+#if OPTIMAL_CMP == 64
+#  define CHORBA_SMALL_THRESHOLD 72
+#else
+#  define CHORBA_SMALL_THRESHOLD 80
+#endif
 
 typedef struct crc32_fold_s {
     uint8_t fold[CRC32_FOLD_BUFFER_SIZE];

@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.12...3.29.0)
+cmake_minimum_required(VERSION 3.14...3.31.0)
 message(STATUS "Using CMake version ${CMAKE_VERSION}")
 
 if(POLICY CMP0169)
@@ -45,15 +45,21 @@ include(CheckCSourceRuns)
 include(CheckCCompilerFlag)
 include(CMakeDependentOption)
 include(CMakePackageConfigHelpers)
+include(CTest)
 include(FeatureSummary)
 
 # We need to enable C++ before trying to check for coverage
-option(ZLIB_ENABLE_TESTS "Build test binaries" ON)
-cmake_dependent_option(ZLIBNG_ENABLE_TESTS "Test zlib-ng specific API" ON "ZLIB_ENABLE_TESTS" OFF)
-cmake_dependent_option(WITH_GTEST "Build gtest_zlib" ON "ZLIB_ENABLE_TESTS" OFF)
-cmake_dependent_option(WITH_FUZZERS "Build test/fuzz" OFF "ZLIB_ENABLE_TESTS" OFF)
-cmake_dependent_option(WITH_BENCHMARKS "Build test/benchmarks" OFF "ZLIB_ENABLE_TESTS" OFF)
-cmake_dependent_option(WITH_BENCHMARK_APPS "Build application benchmarks" OFF "WITH_BENCHMARKS" OFF)
+option(BUILD_TESTING "Build test binaries." ON) # Depends on CMP0077 (3.13)
+if (DEFINED ZLIB_ENABLE_TESTS)
+    message(DEPRECATION "ZLIB_ENABLE_TESTS is deprecated. Please use BUILD_TESTING instead.")
+    if (NOT ZLIB_ENABLE_TESTS)
+        set(BUILD_TESTING OFF)
+    endif()
+endif()
+cmake_dependent_option(WITH_GTEST "Build gtest_zlib" ON "BUILD_TESTING" OFF)
+cmake_dependent_option(WITH_FUZZERS "Build test/fuzz" OFF "BUILD_TESTING" OFF)
+cmake_dependent_option(WITH_BENCHMARKS "Build test/benchmarks" OFF "BUILD_TESTING" OFF)
+cmake_dependent_option(WITH_BENCHMARK_APPS "Build application benchmarks" OFF "BUILD_TESTING" OFF)
 
 if(WITH_GTEST OR WITH_FUZZERS OR WITH_BENCHMARKS)
   enable_language(CXX)
@@ -89,7 +95,7 @@ endif()
 #
 option(WITH_GZFILEOP "Compile with support for gzFile related functions" ON)
 option(ZLIB_COMPAT "Compile with zlib compatible API" OFF)
-option(ZLIB_ALIASES "Provide zlib compatible targets" ON)
+option(ZLIB_ALIASES "Provide zlib compatible CMake targets" ON)
 option(WITH_OPTIM "Build with optimisation" ON)
 option(WITH_ALL_FALLBACKS "Build all generic fallback functions (Useful for Gbench)" OFF)
 option(WITH_REDUCED_MEM "Reduced memory usage for special cases (reduces performance)" OFF)
@@ -112,9 +118,9 @@ set(WITH_SANITIZER AUTO CACHE STRING "Enable sanitizer support")
 set_property(CACHE WITH_SANITIZER PROPERTY STRINGS "Memory" "Address" "Undefined" "Thread")
 
 if(BASEARCH_ARM_FOUND)
+    cmake_dependent_option(WITH_ARMV6 "Build with ARMv6 SIMD" ON "NOT ARCH MATCHES \"aarch64\"" OFF)
     option(WITH_ARMV8 "Build with ARMv8 CRC32 intrinsics" ON)
     option(WITH_NEON "Build with NEON intrinsics" ON)
-    cmake_dependent_option(WITH_ARMV6 "Build with ARMv6 SIMD" ON "NOT ARCH MATCHES \"aarch64\"" OFF)
 
     # Provided for backward compatibility
     if(DEFINED WITH_ACLE)
@@ -216,6 +222,10 @@ elseif(MSVC)
     # See also https://cmake.org/cmake/help/latest/variable/MSVC_VERSION.html
     if(MSVC_VERSION VERSION_LESS 1800)
         message(SEND_ERROR "Unsupported Visual Studio compiler version (requires 2013 or later).")
+    endif()
+    if(MSVC_VERSION VERSION_LESS 1930)
+        message(STATUS "Old Visual Studio compiler version, disabling SSE2/SSE4.1 Chorba variants (requires 2022 or later).")
+        add_definitions(-DWITHOUT_CHORBA_SSE)
     endif()
     # TODO. ICC can be used through MSVC. I'm not sure if we'd ever see that combination
     # (who'd use cmake from an IDE...) but checking for ICC before checking for MSVC should
@@ -1312,7 +1322,6 @@ set(ZLIB_ALL_FALLBACK_SRCS
     arch/generic/chunkset_c.c
     arch/generic/compare256_c.c
     arch/generic/crc32_braid_c.c
-    arch/generic/crc32_c.c
     arch/generic/crc32_fold_c.c
     arch/generic/slide_hash_c.c
 )
@@ -1326,7 +1335,6 @@ elseif(${ARCH} STREQUAL "x86_64" AND WITH_SSE2)
         arch/generic/adler32_c.c
         arch/generic/adler32_fold_c.c
         arch/generic/crc32_braid_c.c
-        arch/generic/crc32_c.c
         arch/generic/crc32_fold_c.c
     )
 
@@ -1572,17 +1580,17 @@ endif()
 # Example binaries
 #============================================================================
 
-if(ZLIB_ENABLE_TESTS)
+if(BUILD_TESTING)
     enable_testing()
 
     if(BUILD_SHARED_LIBS)
-        if(ZLIBNG_ENABLE_TESTS)
-            message(STATUS "Disabling zlib-ng tests because shared libraries are enabled")
-            set(ZLIBNG_ENABLE_TESTS OFF)
+        if(WITH_GTEST)
+            message(STATUS "Disabling gtest because only shared libraries are enabled")
+            set(WITH_GTEST OFF)
         endif()
 
         if(WITH_BENCHMARKS OR WITH_BENCHMARK_APPS)
-            message(STATUS "Disabling benchmarks because shared libraries are enabled")
+            message(STATUS "Disabling google benchmarks because only shared libraries are enabled")
             set(WITH_BENCHMARKS OFF)
             set(WITH_BENCHMARK_APPS OFF)
         endif()
@@ -1593,13 +1601,13 @@ endif()
 
 add_feature_info(WITH_GZFILEOP WITH_GZFILEOP "Compile with support for gzFile related functions")
 add_feature_info(ZLIB_COMPAT ZLIB_COMPAT "Compile with zlib compatible API")
-add_feature_info(ZLIB_ENABLE_TESTS ZLIB_ENABLE_TESTS "Build test binaries")
-add_feature_info(ZLIBNG_ENABLE_TESTS ZLIBNG_ENABLE_TESTS "Test zlib-ng specific API")
-add_feature_info(WITH_SANITIZER WITH_SANITIZER "Enable sanitizer support")
-add_feature_info(WITH_GTEST WITH_GTEST "Build gtest_zlib")
+add_feature_info(ZLIB_ALIASES ZLIB_ALIASES "Compile with zlib compatible CMake targets")
+add_feature_info(BUILD_TESTING BUILD_TESTING "Build test binaries")
+add_feature_info(WITH_SANITIZER WITH_SANITIZER "Enable sanitizer testing support")
+add_feature_info(WITH_GTEST WITH_GTEST "Build tests using Gtest framework")
 add_feature_info(WITH_FUZZERS WITH_FUZZERS "Build test/fuzz")
-add_feature_info(WITH_BENCHMARKS WITH_BENCHMARKS "Build test/benchmarks")
-add_feature_info(WITH_BENCHMARK_APPS WITH_BENCHMARK_APPS "Build application benchmarks")
+add_feature_info(WITH_BENCHMARKS WITH_BENCHMARKS "Build benchmarks using Google Benchmark framework")
+add_feature_info(WITH_BENCHMARK_APPS WITH_BENCHMARK_APPS "Build application benchmarks (currently libpng)")
 add_feature_info(WITH_ALL_FALLBACKS WITH_ALL_FALLBACKS "Build all generic fallback functions")
 add_feature_info(WITH_OPTIM WITH_OPTIM "Build with optimisation")
 add_feature_info(WITH_NEW_STRATEGIES WITH_NEW_STRATEGIES "Use new strategies")
@@ -1613,9 +1621,9 @@ add_feature_info(WITH_INFLATE_STRICT WITH_INFLATE_STRICT "Build with strict infl
 add_feature_info(WITH_INFLATE_ALLOW_INVALID_DIST WITH_INFLATE_ALLOW_INVALID_DIST "Build with zero fill for inflate invalid distances")
 
 if(BASEARCH_ARM_FOUND)
+    add_feature_info(WITH_ARMV6 WITH_ARMV6 "Build with ARMv6 SIMD")
     add_feature_info(WITH_ARMV8 WITH_ARMV8 "Build with ARMv8 CRC32 intrinsics")
     add_feature_info(WITH_NEON WITH_NEON "Build with NEON intrinsics")
-    add_feature_info(WITH_ARMV6 WITH_ARMV6 "Build with ARMv6 SIMD")
 elseif(BASEARCH_PPC_FOUND)
     add_feature_info(WITH_ALTIVEC WITH_ALTIVEC "Build with AltiVec optimisations")
     add_feature_info(WITH_POWER8 WITH_POWER8 "Build with optimisations for POWER8")
@@ -1624,22 +1632,22 @@ elseif(BASEARCH_RISCV_FOUND)
     add_feature_info(WITH_RVV WITH_RVV "Build with RVV intrinsics")
     add_feature_info(WITH_RISCV_ZBC WITH_RISCV_ZBC "Build with RISCV ZBC")
 elseif(BASEARCH_S360_FOUND)
+    add_feature_info(WITH_CRC32_VX WITH_CRC32_VX "Build with vectorized CRC32 on IBM Z")
     add_feature_info(WITH_DFLTCC_DEFLATE WITH_DFLTCC_DEFLATE "Build with DFLTCC intrinsics for compression on IBM Z")
     add_feature_info(WITH_DFLTCC_INFLATE WITH_DFLTCC_INFLATE "Build with DFLTCC intrinsics for decompression on IBM Z")
-    add_feature_info(WITH_CRC32_VX WITH_CRC32_VX "Build with vectorized CRC32 on IBM Z")
 elseif(BASEARCH_LOONGARCH_FOUND)
     add_feature_info(WITH_CRC32_LA WITH_CRC32_LA "Build with vectorized CRC32 on LoongArch")
     add_feature_info(WITH_LSX WITH_LSX "Build with vectorized LSX on LoongArch")
     add_feature_info(WITH_LASX WITH_LASX "Build with vectorized LASX on LoongArch")
 elseif(BASEARCH_X86_FOUND)
-    add_feature_info(WITH_AVX2 WITH_AVX2 "Build with AVX2")
-    add_feature_info(WITH_AVX512 WITH_AVX512 "Build with AVX512")
-    add_feature_info(WITH_AVX512VNNI WITH_AVX512VNNI "Build with AVX512 VNNI")
     add_feature_info(WITH_SSE2 WITH_SSE2 "Build with SSE2")
     add_feature_info(WITH_SSSE3 WITH_SSSE3 "Build with SSSE3")
     add_feature_info(WITH_SSE41 WITH_SSE41 "Build with SSE41")
     add_feature_info(WITH_SSE42 WITH_SSE42 "Build with SSE42")
     add_feature_info(WITH_PCLMULQDQ WITH_PCLMULQDQ "Build with PCLMULQDQ")
+    add_feature_info(WITH_AVX2 WITH_AVX2 "Build with AVX2")
+    add_feature_info(WITH_AVX512 WITH_AVX512 "Build with AVX512")
+    add_feature_info(WITH_AVX512VNNI WITH_AVX512VNNI "Build with AVX512 VNNI")
     add_feature_info(WITH_VPCLMULQDQ WITH_VPCLMULQDQ "Build with VPCLMULQDQ")
 endif()
 
