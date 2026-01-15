@@ -1,4 +1,4 @@
-/* crc32_fold_pclmulqdq_tpl.h -- Compute the CRC32 using a parallelized folding
+/* crc32_pclmulqdq_tpl.h -- Compute the CRC32 using a parallelized folding
  * approach with the PCLMULQDQ and VPCMULQDQ instructions.
  *
  * A white paper describing this algorithm can be found at:
@@ -28,27 +28,7 @@
 #include "crc32_braid_tbl.h"
 #include "x86_intrins.h"
 
-static const unsigned ALIGNED_(16) crc_k[] = {
-    0xccaa009e, 0x00000000, /* rk1 */
-    0x751997d0, 0x00000001, /* rk2 */
-    0xccaa009e, 0x00000000, /* rk5 */
-    0x63cd6124, 0x00000001, /* rk6 */
-    0xf7011640, 0x00000001, /* rk7 */
-    0xdb710640, 0x00000001  /* rk8 */
-};
-
-static const unsigned ALIGNED_(16) crc_mask[4] = {
-    0xFFFFFFFF, 0xFFFFFFFF, 0x00000000, 0x00000000
-};
-
-static const unsigned ALIGNED_(16) crc_mask2[4] = {
-    0x00000000, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF
-};
-
-#define ONCE(op)                if (first) { first = 0; op; }
-#define XOR_INITIAL128(where)   ONCE(where = _mm_xor_si128(where, xmm_initial))
-
-static void fold_1(__m128i *xmm_crc0, __m128i *xmm_crc1, __m128i *xmm_crc2, __m128i *xmm_crc3) {
+static inline void fold_1(__m128i *xmm_crc0, __m128i *xmm_crc1, __m128i *xmm_crc2, __m128i *xmm_crc3) {
     const __m128i xmm_fold4 = _mm_set_epi32( 0x00000001, 0x54442bd4,
                                              0x00000001, 0xc6e41596);
     __m128i x_tmp3;
@@ -69,7 +49,7 @@ static void fold_1(__m128i *xmm_crc0, __m128i *xmm_crc1, __m128i *xmm_crc2, __m1
     *xmm_crc3 = _mm_castps_si128(ps_res);
 }
 
-static void fold_2(__m128i *xmm_crc0, __m128i *xmm_crc1, __m128i *xmm_crc2, __m128i *xmm_crc3) {
+static inline void fold_2(__m128i *xmm_crc0, __m128i *xmm_crc1, __m128i *xmm_crc2, __m128i *xmm_crc3) {
     const __m128i xmm_fold4 = _mm_set_epi32( 0x00000001, 0x54442bd4,
                                              0x00000001, 0xc6e41596);
     __m128i x_tmp3, x_tmp2;
@@ -98,7 +78,7 @@ static void fold_2(__m128i *xmm_crc0, __m128i *xmm_crc1, __m128i *xmm_crc2, __m1
     *xmm_crc3 = _mm_castps_si128(ps_res31);
 }
 
-static void fold_3(__m128i *xmm_crc0, __m128i *xmm_crc1, __m128i *xmm_crc2, __m128i *xmm_crc3) {
+static inline void fold_3(__m128i *xmm_crc0, __m128i *xmm_crc1, __m128i *xmm_crc2, __m128i *xmm_crc3) {
     const __m128i xmm_fold4 = _mm_set_epi32( 0x00000001, 0x54442bd4,
                                              0x00000001, 0xc6e41596);
     __m128i x_tmp3;
@@ -133,7 +113,7 @@ static void fold_3(__m128i *xmm_crc0, __m128i *xmm_crc1, __m128i *xmm_crc2, __m1
     *xmm_crc3 = _mm_castps_si128(ps_res32);
 }
 
-static void fold_4(__m128i *xmm_crc0, __m128i *xmm_crc1, __m128i *xmm_crc2, __m128i *xmm_crc3) {
+static inline void fold_4(__m128i *xmm_crc0, __m128i *xmm_crc1, __m128i *xmm_crc2, __m128i *xmm_crc3) {
     const __m128i xmm_fold4 = _mm_set_epi32( 0x00000001, 0x54442bd4,
                                              0x00000001, 0xc6e41596);
     __m128i x_tmp0, x_tmp1, x_tmp2, x_tmp3;
@@ -176,7 +156,7 @@ static void fold_4(__m128i *xmm_crc0, __m128i *xmm_crc1, __m128i *xmm_crc2, __m1
     *xmm_crc3 = _mm_castps_si128(ps_res3);
 }
 
-static void fold_12(__m128i *xmm_crc0, __m128i *xmm_crc1, __m128i *xmm_crc2, __m128i *xmm_crc3) {
+static inline void fold_12(__m128i *xmm_crc0, __m128i *xmm_crc1, __m128i *xmm_crc2, __m128i *xmm_crc3) {
     const __m128i xmm_fold12 = _mm_set_epi64x(0x596C8D81, 0xF5E48C85);
     __m128i x_tmp0, x_tmp1, x_tmp2, x_tmp3;
     __m128 ps_crc0, ps_crc1, ps_crc2, ps_crc3;
@@ -219,104 +199,25 @@ static void fold_12(__m128i *xmm_crc0, __m128i *xmm_crc1, __m128i *xmm_crc2, __m
 }
 
 #ifdef X86_VPCLMULQDQ
-
-#define XOR_INITIAL512(where) ONCE(where = _mm512_xor_si512(where, zmm_initial))
-
-static size_t fold_16(__m128i *xmm_crc0, __m128i *xmm_crc1, __m128i *xmm_crc2, __m128i *xmm_crc3, uint8_t *dst,
-    const uint8_t *src, size_t len, __m128i init_crc, int32_t first, const int COPY) {
-    __m512i zmm_initial = _mm512_zextsi128_si512(init_crc);
-    __m512i zmm_t0, zmm_t1, zmm_t2, zmm_t3;
-    __m512i zmm_crc0, zmm_crc1, zmm_crc2, zmm_crc3;
-    __m512i z0, z1, z2, z3;
-    size_t len_tmp = len;
-    const __m512i zmm_fold4 = _mm512_set4_epi32(
-        0x00000001, 0x54442bd4, 0x00000001, 0xc6e41596);
+static inline void fold_16(__m512i *zmm_crc0, __m512i *zmm_crc1, __m512i *zmm_crc2, __m512i *zmm_crc3,
+    const __m512i *zmm_t0, const __m512i *zmm_t1, const __m512i *zmm_t2, const __m512i *zmm_t3) {
     const __m512i zmm_fold16 = _mm512_set4_epi32(
         0x00000001, 0x1542778a, 0x00000001, 0x322d1430);
 
-    // zmm register init
-    zmm_crc0 = _mm512_setzero_si512();
-    zmm_t0 = _mm512_loadu_si512((__m512i *)src);
-    if (!COPY) {
-        XOR_INITIAL512(zmm_t0);
-    }
-    zmm_crc1 = _mm512_loadu_si512((__m512i *)src + 1);
-    zmm_crc2 = _mm512_loadu_si512((__m512i *)src + 2);
-    zmm_crc3 = _mm512_loadu_si512((__m512i *)src + 3);
+    __m512i z0 = _mm512_clmulepi64_epi128(*zmm_crc0, zmm_fold16, 0x01);
+    __m512i z1 = _mm512_clmulepi64_epi128(*zmm_crc1, zmm_fold16, 0x01);
+    __m512i z2 = _mm512_clmulepi64_epi128(*zmm_crc2, zmm_fold16, 0x01);
+    __m512i z3 = _mm512_clmulepi64_epi128(*zmm_crc3, zmm_fold16, 0x01);
 
-    /* already have intermediate CRC in xmm registers
-        * fold4 with 4 xmm_crc to get zmm_crc0
-    */
-    zmm_crc0 = _mm512_inserti32x4(zmm_crc0, *xmm_crc0, 0);
-    zmm_crc0 = _mm512_inserti32x4(zmm_crc0, *xmm_crc1, 1);
-    zmm_crc0 = _mm512_inserti32x4(zmm_crc0, *xmm_crc2, 2);
-    zmm_crc0 = _mm512_inserti32x4(zmm_crc0, *xmm_crc3, 3);
-    z0 = _mm512_clmulepi64_epi128(zmm_crc0, zmm_fold4, 0x01);
-    zmm_crc0 = _mm512_clmulepi64_epi128(zmm_crc0, zmm_fold4, 0x10);
-    zmm_crc0 = _mm512_ternarylogic_epi32(zmm_crc0, z0, zmm_t0, 0x96);
+    *zmm_crc0 = _mm512_clmulepi64_epi128(*zmm_crc0, zmm_fold16, 0x10);
+    *zmm_crc1 = _mm512_clmulepi64_epi128(*zmm_crc1, zmm_fold16, 0x10);
+    *zmm_crc2 = _mm512_clmulepi64_epi128(*zmm_crc2, zmm_fold16, 0x10);
+    *zmm_crc3 = _mm512_clmulepi64_epi128(*zmm_crc3, zmm_fold16, 0x10);
 
-    if (COPY) {
-        _mm512_storeu_si512((__m512i *)dst, zmm_t0);
-        _mm512_storeu_si512((__m512i *)dst + 1, zmm_crc1);
-        _mm512_storeu_si512((__m512i *)dst + 2, zmm_crc2);
-        _mm512_storeu_si512((__m512i *)dst + 3, zmm_crc3);
-        dst += 256;
-    }
-    len -= 256;
-    src += 256;
-
-    // fold-16 loops
-    while (len >= 256) {
-        zmm_t0 = _mm512_loadu_si512((__m512i *)src);
-        zmm_t1 = _mm512_loadu_si512((__m512i *)src + 1);
-        zmm_t2 = _mm512_loadu_si512((__m512i *)src + 2);
-        zmm_t3 = _mm512_loadu_si512((__m512i *)src + 3);
-
-        z0 = _mm512_clmulepi64_epi128(zmm_crc0, zmm_fold16, 0x01);
-        z1 = _mm512_clmulepi64_epi128(zmm_crc1, zmm_fold16, 0x01);
-        z2 = _mm512_clmulepi64_epi128(zmm_crc2, zmm_fold16, 0x01);
-        z3 = _mm512_clmulepi64_epi128(zmm_crc3, zmm_fold16, 0x01);
-
-        zmm_crc0 = _mm512_clmulepi64_epi128(zmm_crc0, zmm_fold16, 0x10);
-        zmm_crc1 = _mm512_clmulepi64_epi128(zmm_crc1, zmm_fold16, 0x10);
-        zmm_crc2 = _mm512_clmulepi64_epi128(zmm_crc2, zmm_fold16, 0x10);
-        zmm_crc3 = _mm512_clmulepi64_epi128(zmm_crc3, zmm_fold16, 0x10);
-
-        zmm_crc0 = _mm512_ternarylogic_epi32(zmm_crc0, z0, zmm_t0, 0x96);
-        zmm_crc1 = _mm512_ternarylogic_epi32(zmm_crc1, z1, zmm_t1, 0x96);
-        zmm_crc2 = _mm512_ternarylogic_epi32(zmm_crc2, z2, zmm_t2, 0x96);
-        zmm_crc3 = _mm512_ternarylogic_epi32(zmm_crc3, z3, zmm_t3, 0x96);
-
-        if (COPY) {
-            _mm512_storeu_si512((__m512i *)dst, zmm_t0);
-            _mm512_storeu_si512((__m512i *)dst + 1, zmm_t1);
-            _mm512_storeu_si512((__m512i *)dst + 2, zmm_t2);
-            _mm512_storeu_si512((__m512i *)dst + 3, zmm_t3);
-            dst += 256;
-        }
-        len -= 256;
-        src += 256;
-    }
-    // zmm_crc[0,1,2,3] -> zmm_crc0
-    z0 = _mm512_clmulepi64_epi128(zmm_crc0, zmm_fold4, 0x01);
-    zmm_crc0 = _mm512_clmulepi64_epi128(zmm_crc0, zmm_fold4, 0x10);
-    zmm_crc0 = _mm512_ternarylogic_epi32(zmm_crc0, z0, zmm_crc1, 0x96);
-
-    z0 = _mm512_clmulepi64_epi128(zmm_crc0, zmm_fold4, 0x01);
-    zmm_crc0 = _mm512_clmulepi64_epi128(zmm_crc0, zmm_fold4, 0x10);
-    zmm_crc0 = _mm512_ternarylogic_epi32(zmm_crc0, z0, zmm_crc2, 0x96);
-
-    z0 = _mm512_clmulepi64_epi128(zmm_crc0, zmm_fold4, 0x01);
-    zmm_crc0 = _mm512_clmulepi64_epi128(zmm_crc0, zmm_fold4, 0x10);
-    zmm_crc0 = _mm512_ternarylogic_epi32(zmm_crc0, z0, zmm_crc3, 0x96);
-
-    // zmm_crc0 -> xmm_crc[0, 1, 2, 3]
-    *xmm_crc0 = _mm512_extracti32x4_epi32(zmm_crc0, 0);
-    *xmm_crc1 = _mm512_extracti32x4_epi32(zmm_crc0, 1);
-    *xmm_crc2 = _mm512_extracti32x4_epi32(zmm_crc0, 2);
-    *xmm_crc3 = _mm512_extracti32x4_epi32(zmm_crc0, 3);
-
-    return (len_tmp - len);  // return n bytes processed
+    *zmm_crc0 = _mm512_ternarylogic_epi32(*zmm_crc0, z0, *zmm_t0, 0x96);
+    *zmm_crc1 = _mm512_ternarylogic_epi32(*zmm_crc1, z1, *zmm_t1, 0x96);
+    *zmm_crc2 = _mm512_ternarylogic_epi32(*zmm_crc2, z2, *zmm_t2, 0x96);
+    *zmm_crc3 = _mm512_ternarylogic_epi32(*zmm_crc3, z3, *zmm_t3, 0x96);
 }
 #endif
 
@@ -338,8 +239,8 @@ static const unsigned ALIGNED_(32) pshufb_shf_table[60] = {
     0x0201008f, 0x06050403, 0x0a090807, 0x0e0d0c0b  /* shl  1 (16 -15)/shr15*/
 };
 
-static void partial_fold(const size_t len, __m128i *xmm_crc0, __m128i *xmm_crc1, __m128i *xmm_crc2,
-                         __m128i *xmm_crc3, __m128i *xmm_crc_part) {
+static inline void partial_fold(const size_t len, __m128i *xmm_crc0, __m128i *xmm_crc1, __m128i *xmm_crc2,
+    __m128i *xmm_crc3, __m128i *xmm_crc_part) {
     const __m128i xmm_fold4 = _mm_set_epi32(0x00000001, 0x54442bd4,
                                             0x00000001, 0xc6e41596);
     const __m128i xmm_mask3 = _mm_set1_epi32((int32_t)0x80808080);
@@ -383,185 +284,168 @@ static void partial_fold(const size_t len, __m128i *xmm_crc0, __m128i *xmm_crc1,
     *xmm_crc3 = _mm_castps_si128(ps_res);
 }
 
-static inline uint32_t crc32_small(uint32_t crc, const uint8_t *buf, size_t len) {
+static inline uint32_t crc32_copy_small(uint32_t crc, uint8_t *dst, const uint8_t *buf, size_t len, const int COPY) {
     uint32_t c = (~crc) & 0xffffffff;
 
     while (len) {
         len--;
+        if (COPY) {
+            *dst++ = *buf;
+        }
         CRC_DO1;
     }
 
     return c ^ 0xffffffff;
 }
 
-static inline void crc32_fold_load(__m128i *fold, __m128i *fold0, __m128i *fold1, __m128i *fold2, __m128i *fold3) {
-    *fold0 = _mm_load_si128(fold + 0);
-    *fold1 = _mm_load_si128(fold + 1);
-    *fold2 = _mm_load_si128(fold + 2);
-    *fold3 = _mm_load_si128(fold + 3);
+static inline uint32_t fold_final(__m128i *xmm_crc0, __m128i *xmm_crc1, __m128i *xmm_crc2, __m128i *xmm_crc3) {
+    __m128i x_tmp0, x_tmp1, x_tmp2;
+    const __m128i k12 = _mm_set_epi32(0x00000001, 0x751997d0, 0x00000000, 0xccaa009e);
+    const __m128i barrett_k = _mm_set_epi32(0x00000001, 0xdb710640, 0xb4e5b025, 0xf7011641);
+    uint32_t crc;
+
+    /* Fold 4x128-bit into a single 128-bit value using k1/k2 constants */
+    x_tmp0 = _mm_clmulepi64_si128(*xmm_crc0, k12, 0x10);
+    *xmm_crc0 = _mm_clmulepi64_si128(*xmm_crc0, k12, 0x01);
+    *xmm_crc1 = _mm_xor_si128(*xmm_crc1, x_tmp0);
+    *xmm_crc1 = _mm_xor_si128(*xmm_crc1, *xmm_crc0);
+
+    x_tmp1 = _mm_clmulepi64_si128(*xmm_crc1, k12, 0x10);
+    *xmm_crc1 = _mm_clmulepi64_si128(*xmm_crc1, k12, 0x01);
+    *xmm_crc2 = _mm_xor_si128(*xmm_crc2, x_tmp1);
+    *xmm_crc2 = _mm_xor_si128(*xmm_crc2, *xmm_crc1);
+
+    x_tmp2 = _mm_clmulepi64_si128(*xmm_crc2, k12, 0x10);
+    *xmm_crc2 = _mm_clmulepi64_si128(*xmm_crc2, k12, 0x01);
+    *xmm_crc3 = _mm_xor_si128(*xmm_crc3, x_tmp2);
+    *xmm_crc3 = _mm_xor_si128(*xmm_crc3, *xmm_crc2);
+
+    /* Reduce 128-bits to 32-bits using two-stage Barrett reduction */
+    x_tmp0 = _mm_clmulepi64_si128(*xmm_crc3, barrett_k, 0x00);
+    x_tmp1 = _mm_clmulepi64_si128(x_tmp0, barrett_k, 0x10);
+    x_tmp1 = _mm_and_si128(x_tmp1, _mm_setr_epi32(0, 0, ~0, 0));
+    x_tmp0 = _mm_xor_si128(x_tmp1, *xmm_crc3);
+    x_tmp0 = _mm_clmulepi64_si128(x_tmp0, barrett_k, 0x01);
+    x_tmp0 = _mm_clmulepi64_si128(x_tmp0, barrett_k, 0x10);
+
+    crc = ((uint32_t)_mm_extract_epi32(x_tmp0, 2));
+
+    return ~crc;
 }
 
-static inline void crc32_fold_save(__m128i *fold, const __m128i *fold0, const __m128i *fold1,
-                                   const __m128i *fold2, const __m128i *fold3) {
-    _mm_storeu_si128(fold + 0, *fold0);
-    _mm_storeu_si128(fold + 1, *fold1);
-    _mm_storeu_si128(fold + 2, *fold2);
-    _mm_storeu_si128(fold + 3, *fold3);
-}
+Z_FORCEINLINE static uint32_t crc32_copy_impl(uint32_t crc, uint8_t *dst, const uint8_t *src, size_t len, const int COPY) {
+    size_t copy_len = len;
+    if (len >= 16) {
+        /* Calculate 16-byte alignment offset */
+        unsigned algn_diff = ((uintptr_t)16 - ((uintptr_t)src & 0xF)) & 0xF;
 
-static inline uint32_t crc32_fold_reset(crc32_fold *crc) {
-    __m128i xmm_crc0 = _mm_cvtsi32_si128(0x9db42487);
-    __m128i xmm_zero = _mm_setzero_si128();
-    crc32_fold_save((__m128i *)crc->fold, &xmm_crc0, &xmm_zero, &xmm_zero, &xmm_zero);
-    return 0;
-}
+        /* If total length is less than (alignment bytes + 16), use the faster small method.
+         * Handles both initially small buffers and cases where alignment would leave < 16 bytes */
+        copy_len = len < algn_diff + 16 ? len : algn_diff;
+    }
 
-static inline uint32_t crc32_fold_final(crc32_fold *crc) {
-    const __m128i xmm_mask  = _mm_load_si128((__m128i *)crc_mask);
-    const __m128i xmm_mask2 = _mm_load_si128((__m128i *)crc_mask2);
-    __m128i xmm_crc0, xmm_crc1, xmm_crc2, xmm_crc3;
-    __m128i x_tmp0, x_tmp1, x_tmp2, crc_fold;
+    if (copy_len > 0) {
+        crc = crc32_copy_small(crc, dst, src, copy_len, COPY);
+        src += copy_len;
+        len -= copy_len;
+        if (COPY) {
+            dst += copy_len;
+        }
+    }
 
-    crc32_fold_load((__m128i *)crc->fold, &xmm_crc0, &xmm_crc1, &xmm_crc2, &xmm_crc3);
+    if (len == 0)
+        return crc;
 
-    /*
-     * k1
-     */
-    crc_fold = _mm_load_si128((__m128i *)crc_k);
-
-    x_tmp0 = _mm_clmulepi64_si128(xmm_crc0, crc_fold, 0x10);
-    xmm_crc0 = _mm_clmulepi64_si128(xmm_crc0, crc_fold, 0x01);
-    xmm_crc1 = _mm_xor_si128(xmm_crc1, x_tmp0);
-    xmm_crc1 = _mm_xor_si128(xmm_crc1, xmm_crc0);
-
-    x_tmp1 = _mm_clmulepi64_si128(xmm_crc1, crc_fold, 0x10);
-    xmm_crc1 = _mm_clmulepi64_si128(xmm_crc1, crc_fold, 0x01);
-    xmm_crc2 = _mm_xor_si128(xmm_crc2, x_tmp1);
-    xmm_crc2 = _mm_xor_si128(xmm_crc2, xmm_crc1);
-
-    x_tmp2 = _mm_clmulepi64_si128(xmm_crc2, crc_fold, 0x10);
-    xmm_crc2 = _mm_clmulepi64_si128(xmm_crc2, crc_fold, 0x01);
-    xmm_crc3 = _mm_xor_si128(xmm_crc3, x_tmp2);
-    xmm_crc3 = _mm_xor_si128(xmm_crc3, xmm_crc2);
-
-    /*
-     * k5
-     */
-    crc_fold = _mm_load_si128((__m128i *)(crc_k + 4));
-
-    xmm_crc0 = xmm_crc3;
-    xmm_crc3 = _mm_clmulepi64_si128(xmm_crc3, crc_fold, 0);
-    xmm_crc0 = _mm_srli_si128(xmm_crc0, 8);
-    xmm_crc3 = _mm_xor_si128(xmm_crc3, xmm_crc0);
-
-    xmm_crc0 = xmm_crc3;
-    xmm_crc3 = _mm_slli_si128(xmm_crc3, 4);
-    xmm_crc3 = _mm_clmulepi64_si128(xmm_crc3, crc_fold, 0x10);
-    xmm_crc3 = _mm_xor_si128(xmm_crc3, xmm_crc0);
-    xmm_crc3 = _mm_and_si128(xmm_crc3, xmm_mask2);
-
-    /*
-     * k7
-     */
-    xmm_crc1 = xmm_crc3;
-    xmm_crc2 = xmm_crc3;
-    crc_fold = _mm_load_si128((__m128i *)(crc_k + 8));
-
-    xmm_crc3 = _mm_clmulepi64_si128(xmm_crc3, crc_fold, 0);
-    xmm_crc3 = _mm_xor_si128(xmm_crc3, xmm_crc2);
-    xmm_crc3 = _mm_and_si128(xmm_crc3, xmm_mask);
-
-    xmm_crc2 = xmm_crc3;
-    xmm_crc3 = _mm_clmulepi64_si128(xmm_crc3, crc_fold, 0x10);
-    xmm_crc3 = _mm_xor_si128(xmm_crc3, xmm_crc2);
-    xmm_crc3 = _mm_xor_si128(xmm_crc3, xmm_crc1);
-
-    crc->value = ~((uint32_t)_mm_extract_epi32(xmm_crc3, 2));
-
-    return crc->value;
-}
-
-static inline void crc32_fold_copy(crc32_fold *crc, uint8_t *dst, const uint8_t *src, size_t len, uint32_t init_crc, const int COPY) {
-    unsigned long algn_diff;
     __m128i xmm_t0, xmm_t1, xmm_t2, xmm_t3;
-    __m128i xmm_crc0, xmm_crc1, xmm_crc2, xmm_crc3;
     __m128i xmm_crc_part = _mm_setzero_si128();
-    char ALIGNED_(16) partial_buf[16] = { 0 };
-    __m128i xmm_initial = _mm_cvtsi32_si128(init_crc);
-    int32_t first = init_crc != 0;
+    __m128i xmm_crc0 = _mm_cvtsi32_si128(0x9db42487);
+    __m128i xmm_crc1 = _mm_setzero_si128();
+    __m128i xmm_crc2 = _mm_setzero_si128();
+    __m128i xmm_crc3 = _mm_setzero_si128();
 
-    if (!COPY) {
-        /* The CRC functions don't call this for input < 16, as a minimum of 16 bytes of input is needed
-         * for the aligning load that occurs.  If there's an initial CRC, to carry it forward through
-         * the folded CRC there must be 16 - src % 16 + 16 bytes available, which by definition can be
-         * up to 15 bytes + one full vector load. */
-        Assert(len >= 16 || first == 0, "Insufficient data for initial CRC");
-    }
-    crc32_fold_load((__m128i *)crc->fold, &xmm_crc0, &xmm_crc1, &xmm_crc2, &xmm_crc3);
-
-    if (len < 16) {
-        if (len == 0)
-            return;
-
-        memcpy(partial_buf, src, len);
-        xmm_crc_part = _mm_load_si128((const __m128i *)partial_buf);
+    if (crc != 0) {
+        // Process the first 16 bytes and handle initial CRC
+        fold_1(&xmm_crc0, &xmm_crc1, &xmm_crc2, &xmm_crc3);
+        len -= 16;
+        xmm_t0 = _mm_load_si128((__m128i *)src);
+        src += 16;
         if (COPY) {
-            memcpy(dst, partial_buf, len);
+            _mm_storeu_si128((__m128i *)dst, xmm_t0);
+            dst += 16;
         }
-        goto partial;
-    }
-
-    algn_diff = ((uintptr_t)16 - ((uintptr_t)src & 0xF)) & 0xF;
-    if (algn_diff) {
-        xmm_crc_part = _mm_loadu_si128((__m128i *)src);
-        if (COPY) {
-            _mm_storeu_si128((__m128i *)dst, xmm_crc_part);
-            dst += algn_diff;
-        } else {
-            XOR_INITIAL128(xmm_crc_part);
-
-            if (algn_diff < 4 && init_crc != 0) {
-                xmm_t0 = xmm_crc_part;
-                if (len >= 32) {
-                    xmm_crc_part = _mm_loadu_si128((__m128i*)src + 1);
-                    fold_1(&xmm_crc0, &xmm_crc1, &xmm_crc2, &xmm_crc3);
-                    xmm_crc3 = _mm_xor_si128(xmm_crc3, xmm_t0);
-                } else {
-                    memcpy(partial_buf, src + 16, len - 16);
-                    xmm_crc_part = _mm_load_si128((__m128i*)partial_buf);
-                    fold_1(&xmm_crc0, &xmm_crc1, &xmm_crc2, &xmm_crc3);
-                    xmm_crc3 = _mm_xor_si128(xmm_crc3, xmm_t0);
-                    src += 16;
-                    len -= 16;
-                    if (COPY) {
-                        dst -= algn_diff;
-                    }
-                    goto partial;
-                }
-
-                src += 16;
-                len -= 16;
-            }
-        }
-
-        partial_fold(algn_diff, &xmm_crc0, &xmm_crc1, &xmm_crc2, &xmm_crc3, &xmm_crc_part);
-
-        src += algn_diff;
-        len -= algn_diff;
+        xmm_t0 = _mm_xor_si128(xmm_t0, _mm_cvtsi32_si128(crc));
+        xmm_crc3 = _mm_xor_si128(xmm_crc3, xmm_t0);
     }
 
 #ifdef X86_VPCLMULQDQ
     if (len >= 256) {
-        size_t n;
+        len -= 256;
+
+        // zmm register init from xmm state and first 256 bytes
+        __m512i zmm_crc0 = _mm512_setzero_si512();
+        __m512i zmm_crc1, zmm_crc2, zmm_crc3;
+        __m512i zmm_t0, zmm_t1, zmm_t2, zmm_t3;
+        const __m512i zmm_fold4 = _mm512_set4_epi32(
+            0x00000001, 0x54442bd4, 0x00000001, 0xc6e41596);
+
+        zmm_t0 = _mm512_loadu_si512((__m512i *)src);
+        zmm_crc1 = _mm512_loadu_si512((__m512i *)src + 1);
+        zmm_crc2 = _mm512_loadu_si512((__m512i *)src + 2);
+        zmm_crc3 = _mm512_loadu_si512((__m512i *)src + 3);
+        src += 256;
         if (COPY) {
-            n = fold_16(&xmm_crc0, &xmm_crc1, &xmm_crc2, &xmm_crc3, dst, src, len, xmm_initial, first, 1);
-            dst += n;
-        } else {
-            n = fold_16(&xmm_crc0, &xmm_crc1, &xmm_crc2, &xmm_crc3, dst, src, len, xmm_initial, first, 0);
-            first = 0;
+            _mm512_storeu_si512((__m512i *)dst, zmm_t0);
+            _mm512_storeu_si512((__m512i *)dst + 1, zmm_crc1);
+            _mm512_storeu_si512((__m512i *)dst + 2, zmm_crc2);
+            _mm512_storeu_si512((__m512i *)dst + 3, zmm_crc3);
+            dst += 256;
         }
-        len -= n;
-        src += n;
+
+        // Combine 4 partial CRCs into zmm_crc0 using clmul with the folding polynomial (zmm_fold4)
+        zmm_crc0 = _mm512_inserti32x4(zmm_crc0, xmm_crc0, 0);
+        zmm_crc0 = _mm512_inserti32x4(zmm_crc0, xmm_crc1, 1);
+        zmm_crc0 = _mm512_inserti32x4(zmm_crc0, xmm_crc2, 2);
+        zmm_crc0 = _mm512_inserti32x4(zmm_crc0, xmm_crc3, 3);
+        __m512i z0 = _mm512_clmulepi64_epi128(zmm_crc0, zmm_fold4, 0x01);
+        zmm_crc0 = _mm512_clmulepi64_epi128(zmm_crc0, zmm_fold4, 0x10);
+        zmm_crc0 = _mm512_ternarylogic_epi32(zmm_crc0, z0, zmm_t0, 0x96);
+
+        while (len >= 256) {
+            len -= 256;
+            zmm_t0 = _mm512_loadu_si512((__m512i *)src);
+            zmm_t1 = _mm512_loadu_si512((__m512i *)src + 1);
+            zmm_t2 = _mm512_loadu_si512((__m512i *)src + 2);
+            zmm_t3 = _mm512_loadu_si512((__m512i *)src + 3);
+            src += 256;
+            if (COPY) {
+                _mm512_storeu_si512((__m512i *)dst, zmm_t0);
+                _mm512_storeu_si512((__m512i *)dst + 1, zmm_t1);
+                _mm512_storeu_si512((__m512i *)dst + 2, zmm_t2);
+                _mm512_storeu_si512((__m512i *)dst + 3, zmm_t3);
+                dst += 256;
+            }
+
+            fold_16(&zmm_crc0, &zmm_crc1, &zmm_crc2, &zmm_crc3, &zmm_t0, &zmm_t1, &zmm_t2, &zmm_t3);
+        }
+
+        // zmm_crc[0,1,2,3] -> zmm_crc0
+        z0 = _mm512_clmulepi64_epi128(zmm_crc0, zmm_fold4, 0x01);
+        zmm_crc0 = _mm512_clmulepi64_epi128(zmm_crc0, zmm_fold4, 0x10);
+        zmm_crc0 = _mm512_ternarylogic_epi32(zmm_crc0, z0, zmm_crc1, 0x96);
+
+        z0 = _mm512_clmulepi64_epi128(zmm_crc0, zmm_fold4, 0x01);
+        zmm_crc0 = _mm512_clmulepi64_epi128(zmm_crc0, zmm_fold4, 0x10);
+        zmm_crc0 = _mm512_ternarylogic_epi32(zmm_crc0, z0, zmm_crc2, 0x96);
+
+        z0 = _mm512_clmulepi64_epi128(zmm_crc0, zmm_fold4, 0x01);
+        zmm_crc0 = _mm512_clmulepi64_epi128(zmm_crc0, zmm_fold4, 0x10);
+        zmm_crc0 = _mm512_ternarylogic_epi32(zmm_crc0, z0, zmm_crc3, 0x96);
+
+        // zmm_crc0 -> xmm_crc[0, 1, 2, 3]
+        xmm_crc0 = _mm512_extracti32x4_epi32(zmm_crc0, 0);
+        xmm_crc1 = _mm512_extracti32x4_epi32(zmm_crc0, 1);
+        xmm_crc2 = _mm512_extracti32x4_epi32(zmm_crc0, 2);
+        xmm_crc3 = _mm512_extracti32x4_epi32(zmm_crc0, 3);
     }
 #endif
 
@@ -575,6 +459,8 @@ static inline void crc32_fold_copy(crc32_fold *crc, uint8_t *dst, const uint8_t 
     if (!COPY) {
 #endif
     while (len >= 512 + 64 + 16*8) {
+        fold_12(&xmm_crc0, &xmm_crc1, &xmm_crc2, &xmm_crc3);
+
         __m128i chorba8 = _mm_load_si128((__m128i *)src);
         __m128i chorba7 = _mm_load_si128((__m128i *)src + 1);
         __m128i chorba6 = _mm_load_si128((__m128i *)src + 2);
@@ -593,9 +479,8 @@ static inline void crc32_fold_copy(crc32_fold *crc, uint8_t *dst, const uint8_t 
             _mm_storeu_si128((__m128i *)dst + 6, chorba2);
             _mm_storeu_si128((__m128i *)dst + 7, chorba1);
             dst += 16*8;
-        } else {
-            XOR_INITIAL128(chorba8);
         }
+
         chorba2 = _mm_xor_si128(chorba2, chorba8);
         chorba1 = _mm_xor_si128(chorba1, chorba7);
         src += 16*8;
@@ -605,8 +490,6 @@ static inline void crc32_fold_copy(crc32_fold *crc, uint8_t *dst, const uint8_t 
         xmm_t1 = _mm_load_si128((__m128i *)src + 1);
         xmm_t2 = _mm_load_si128((__m128i *)src + 2);
         xmm_t3 = _mm_load_si128((__m128i *)src + 3);
-
-        fold_12(&xmm_crc0, &xmm_crc1, &xmm_crc2, &xmm_crc3);
         if (COPY) {
             _mm_storeu_si128((__m128i *)dst, xmm_t0);
             _mm_storeu_si128((__m128i *)dst + 1, xmm_t1);
@@ -614,6 +497,7 @@ static inline void crc32_fold_copy(crc32_fold *crc, uint8_t *dst, const uint8_t 
             _mm_storeu_si128((__m128i *)dst + 3, xmm_t3);
             dst += 64;
         }
+
         xmm_t0 = _mm_xor_si128(xmm_t0, chorba6);
         xmm_t1 = _mm_xor_si128(_mm_xor_si128(xmm_t1, chorba5), chorba8);
         xmm_t2 = _mm_xor_si128(_mm_xor_si128(_mm_xor_si128(xmm_t2, chorba4), chorba8), chorba7);
@@ -622,13 +506,12 @@ static inline void crc32_fold_copy(crc32_fold *crc, uint8_t *dst, const uint8_t 
         xmm_crc1 = _mm_xor_si128(xmm_t1, xmm_crc1);
         xmm_crc2 = _mm_xor_si128(xmm_t2, xmm_crc2);
         xmm_crc3 = _mm_xor_si128(xmm_t3, xmm_crc3);
+        fold_4(&xmm_crc0, &xmm_crc1, &xmm_crc2, &xmm_crc3);
 
         xmm_t0 = _mm_load_si128((__m128i *)src + 4);
         xmm_t1 = _mm_load_si128((__m128i *)src + 5);
         xmm_t2 = _mm_load_si128((__m128i *)src + 6);
         xmm_t3 = _mm_load_si128((__m128i *)src + 7);
-
-        fold_4(&xmm_crc0, &xmm_crc1, &xmm_crc2, &xmm_crc3);
         if (COPY) {
             _mm_storeu_si128((__m128i *)dst, xmm_t0);
             _mm_storeu_si128((__m128i *)dst + 1, xmm_t1);
@@ -645,13 +528,12 @@ static inline void crc32_fold_copy(crc32_fold *crc, uint8_t *dst, const uint8_t 
         xmm_crc1 = _mm_xor_si128(xmm_t1, xmm_crc1);
         xmm_crc2 = _mm_xor_si128(xmm_t2, xmm_crc2);
         xmm_crc3 = _mm_xor_si128(xmm_t3, xmm_crc3);
+        fold_4(&xmm_crc0, &xmm_crc1, &xmm_crc2, &xmm_crc3);
 
         xmm_t0 = _mm_load_si128((__m128i *)src + 8);
         xmm_t1 = _mm_load_si128((__m128i *)src + 9);
         xmm_t2 = _mm_load_si128((__m128i *)src + 10);
         xmm_t3 = _mm_load_si128((__m128i *)src + 11);
-
-        fold_4(&xmm_crc0, &xmm_crc1, &xmm_crc2, &xmm_crc3);
         if (COPY) {
             _mm_storeu_si128((__m128i *)dst, xmm_t0);
             _mm_storeu_si128((__m128i *)dst + 1, xmm_t1);
@@ -668,13 +550,12 @@ static inline void crc32_fold_copy(crc32_fold *crc, uint8_t *dst, const uint8_t 
         xmm_crc1 = _mm_xor_si128(xmm_t1, xmm_crc1);
         xmm_crc2 = _mm_xor_si128(xmm_t2, xmm_crc2);
         xmm_crc3 = _mm_xor_si128(xmm_t3, xmm_crc3);
+        fold_4(&xmm_crc0, &xmm_crc1, &xmm_crc2, &xmm_crc3);
 
         xmm_t0 = _mm_load_si128((__m128i *)src + 12);
         xmm_t1 = _mm_load_si128((__m128i *)src + 13);
         xmm_t2 = _mm_load_si128((__m128i *)src + 14);
         xmm_t3 = _mm_load_si128((__m128i *)src + 15);
-
-        fold_4(&xmm_crc0, &xmm_crc1, &xmm_crc2, &xmm_crc3);
         if (COPY) {
             _mm_storeu_si128((__m128i *)dst, xmm_t0);
             _mm_storeu_si128((__m128i *)dst + 1, xmm_t1);
@@ -691,13 +572,12 @@ static inline void crc32_fold_copy(crc32_fold *crc, uint8_t *dst, const uint8_t 
         xmm_crc1 = _mm_xor_si128(xmm_t1, xmm_crc1);
         xmm_crc2 = _mm_xor_si128(xmm_t2, xmm_crc2);
         xmm_crc3 = _mm_xor_si128(xmm_t3, xmm_crc3);
+        fold_4(&xmm_crc0, &xmm_crc1, &xmm_crc2, &xmm_crc3);
 
         xmm_t0 = _mm_load_si128((__m128i *)src + 16);
         xmm_t1 = _mm_load_si128((__m128i *)src + 17);
         xmm_t2 = _mm_load_si128((__m128i *)src + 18);
         xmm_t3 = _mm_load_si128((__m128i *)src + 19);
-
-        fold_4(&xmm_crc0, &xmm_crc1, &xmm_crc2, &xmm_crc3);
         if (COPY) {
             _mm_storeu_si128((__m128i *)dst, xmm_t0);
             _mm_storeu_si128((__m128i *)dst + 1, xmm_t1);
@@ -714,13 +594,12 @@ static inline void crc32_fold_copy(crc32_fold *crc, uint8_t *dst, const uint8_t 
         xmm_crc1 = _mm_xor_si128(xmm_t1, xmm_crc1);
         xmm_crc2 = _mm_xor_si128(xmm_t2, xmm_crc2);
         xmm_crc3 = _mm_xor_si128(xmm_t3, xmm_crc3);
+        fold_4(&xmm_crc0, &xmm_crc1, &xmm_crc2, &xmm_crc3);
 
         xmm_t0 = _mm_load_si128((__m128i *)src + 20);
         xmm_t1 = _mm_load_si128((__m128i *)src + 21);
         xmm_t2 = _mm_load_si128((__m128i *)src + 22);
         xmm_t3 = _mm_load_si128((__m128i *)src + 23);
-
-        fold_4(&xmm_crc0, &xmm_crc1, &xmm_crc2, &xmm_crc3);
         if (COPY) {
             _mm_storeu_si128((__m128i *)dst, xmm_t0);
             _mm_storeu_si128((__m128i *)dst + 1, xmm_t1);
@@ -737,13 +616,12 @@ static inline void crc32_fold_copy(crc32_fold *crc, uint8_t *dst, const uint8_t 
         xmm_crc1 = _mm_xor_si128(xmm_t1, xmm_crc1);
         xmm_crc2 = _mm_xor_si128(xmm_t2, xmm_crc2);
         xmm_crc3 = _mm_xor_si128(xmm_t3, xmm_crc3);
+        fold_4(&xmm_crc0, &xmm_crc1, &xmm_crc2, &xmm_crc3);
 
         xmm_t0 = _mm_load_si128((__m128i *)src + 24);
         xmm_t1 = _mm_load_si128((__m128i *)src + 25);
         xmm_t2 = _mm_load_si128((__m128i *)src + 26);
         xmm_t3 = _mm_load_si128((__m128i *)src + 27);
-
-        fold_4(&xmm_crc0, &xmm_crc1, &xmm_crc2, &xmm_crc3);
         if (COPY) {
             _mm_storeu_si128((__m128i *)dst, xmm_t0);
             _mm_storeu_si128((__m128i *)dst + 1, xmm_t1);
@@ -759,13 +637,12 @@ static inline void crc32_fold_copy(crc32_fold *crc, uint8_t *dst, const uint8_t 
         xmm_crc1 = _mm_xor_si128(xmm_t1, xmm_crc1);
         xmm_crc2 = _mm_xor_si128(xmm_t2, xmm_crc2);
         xmm_crc3 = _mm_xor_si128(xmm_t3, xmm_crc3);
+        fold_4(&xmm_crc0, &xmm_crc1, &xmm_crc2, &xmm_crc3);
 
         xmm_t0 = _mm_load_si128((__m128i *)src + 28);
         xmm_t1 = _mm_load_si128((__m128i *)src + 29);
         xmm_t2 = _mm_load_si128((__m128i *)src + 30);
         xmm_t3 = _mm_load_si128((__m128i *)src + 31);
-
-        fold_4(&xmm_crc0, &xmm_crc1, &xmm_crc2, &xmm_crc3);
         if (COPY) {
             _mm_storeu_si128((__m128i *)dst, xmm_t0);
             _mm_storeu_si128((__m128i *)dst + 1, xmm_t1);
@@ -791,21 +668,19 @@ static inline void crc32_fold_copy(crc32_fold *crc, uint8_t *dst, const uint8_t 
 
     while (len >= 64) {
         len -= 64;
+        fold_4(&xmm_crc0, &xmm_crc1, &xmm_crc2, &xmm_crc3);
+
         xmm_t0 = _mm_load_si128((__m128i *)src);
         xmm_t1 = _mm_load_si128((__m128i *)src + 1);
         xmm_t2 = _mm_load_si128((__m128i *)src + 2);
         xmm_t3 = _mm_load_si128((__m128i *)src + 3);
         src += 64;
-
-        fold_4(&xmm_crc0, &xmm_crc1, &xmm_crc2, &xmm_crc3);
         if (COPY) {
             _mm_storeu_si128((__m128i *)dst, xmm_t0);
             _mm_storeu_si128((__m128i *)dst + 1, xmm_t1);
             _mm_storeu_si128((__m128i *)dst + 2, xmm_t2);
             _mm_storeu_si128((__m128i *)dst + 3, xmm_t3);
             dst += 64;
-        } else {
-            XOR_INITIAL128(xmm_t0);
         }
 
         xmm_crc0 = _mm_xor_si128(xmm_crc0, xmm_t0);
@@ -819,6 +694,7 @@ static inline void crc32_fold_copy(crc32_fold *crc, uint8_t *dst, const uint8_t 
      */
     if (len >= 48) {
         len -= 48;
+        fold_3(&xmm_crc0, &xmm_crc1, &xmm_crc2, &xmm_crc3);
 
         xmm_t0 = _mm_load_si128((__m128i *)src);
         xmm_t1 = _mm_load_si128((__m128i *)src + 1);
@@ -829,16 +705,14 @@ static inline void crc32_fold_copy(crc32_fold *crc, uint8_t *dst, const uint8_t 
             _mm_storeu_si128((__m128i *)dst + 1, xmm_t1);
             _mm_storeu_si128((__m128i *)dst + 2, xmm_t2);
             dst += 48;
-        } else {
-            XOR_INITIAL128(xmm_t0);
         }
-        fold_3(&xmm_crc0, &xmm_crc1, &xmm_crc2, &xmm_crc3);
 
         xmm_crc1 = _mm_xor_si128(xmm_crc1, xmm_t0);
         xmm_crc2 = _mm_xor_si128(xmm_crc2, xmm_t1);
         xmm_crc3 = _mm_xor_si128(xmm_crc3, xmm_t2);
     } else if (len >= 32) {
         len -= 32;
+        fold_2(&xmm_crc0, &xmm_crc1, &xmm_crc2, &xmm_crc3);
 
         xmm_t0 = _mm_load_si128((__m128i *)src);
         xmm_t1 = _mm_load_si128((__m128i *)src + 1);
@@ -847,37 +721,33 @@ static inline void crc32_fold_copy(crc32_fold *crc, uint8_t *dst, const uint8_t 
             _mm_storeu_si128((__m128i *)dst, xmm_t0);
             _mm_storeu_si128((__m128i *)dst + 1, xmm_t1);
             dst += 32;
-        } else {
-            XOR_INITIAL128(xmm_t0);
         }
-        fold_2(&xmm_crc0, &xmm_crc1, &xmm_crc2, &xmm_crc3);
 
         xmm_crc2 = _mm_xor_si128(xmm_crc2, xmm_t0);
         xmm_crc3 = _mm_xor_si128(xmm_crc3, xmm_t1);
     } else if (len >= 16) {
         len -= 16;
+        fold_1(&xmm_crc0, &xmm_crc1, &xmm_crc2, &xmm_crc3);
+
         xmm_t0 = _mm_load_si128((__m128i *)src);
         src += 16;
         if (COPY) {
             _mm_storeu_si128((__m128i *)dst, xmm_t0);
             dst += 16;
-        } else {
-            XOR_INITIAL128(xmm_t0);
         }
-        fold_1(&xmm_crc0, &xmm_crc1, &xmm_crc2, &xmm_crc3);
 
         xmm_crc3 = _mm_xor_si128(xmm_crc3, xmm_t0);
     }
 
-partial:
     if (len) {
         memcpy(&xmm_crc_part, src, len);
         if (COPY) {
+            uint8_t ALIGNED_(16) partial_buf[16] = { 0 };
             _mm_storeu_si128((__m128i *)partial_buf, xmm_crc_part);
             memcpy(dst, partial_buf, len);
         }
         partial_fold(len, &xmm_crc0, &xmm_crc1, &xmm_crc2, &xmm_crc3, &xmm_crc_part);
     }
 
-    crc32_fold_save((__m128i *)crc->fold, &xmm_crc0, &xmm_crc1, &xmm_crc2, &xmm_crc3);
+    return fold_final(&xmm_crc0, &xmm_crc1, &xmm_crc2, &xmm_crc3);
 }

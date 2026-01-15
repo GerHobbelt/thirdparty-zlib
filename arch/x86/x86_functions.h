@@ -25,19 +25,22 @@ uint8_t* chunkmemset_safe_sse2(uint8_t *out, uint8_t *from, unsigned len, unsign
     void slide_hash_sse2(deflate_state *s);
     void inflate_fast_sse2(PREFIX3(stream)* strm, uint32_t start);
 #  if !defined(WITHOUT_CHORBA_SSE)
-    uint32_t crc32_chorba_sse2(uint32_t crc32, const uint8_t *buf, size_t len);
+    uint32_t crc32_chorba_sse2(uint32_t crc, const uint8_t *buf, size_t len);
+    uint32_t crc32_copy_chorba_sse2(uint32_t crc, uint8_t *dst, const uint8_t *src, size_t len);
     uint32_t chorba_small_nondestructive_sse2(uint32_t c, const uint64_t *aligned_buf, size_t aligned_len);
 #  endif
 #endif
 
 #ifdef X86_SSSE3
 uint32_t adler32_ssse3(uint32_t adler, const uint8_t *buf, size_t len);
+uint32_t adler32_copy_ssse3(uint32_t adler, uint8_t *dst, const uint8_t *src, size_t len);
 uint8_t* chunkmemset_safe_ssse3(uint8_t *out, uint8_t *from, unsigned len, unsigned left);
 void inflate_fast_ssse3(PREFIX3(stream) *strm, uint32_t start);
 #endif
 
 #if defined(X86_SSE41) && !defined(WITHOUT_CHORBA_SSE)
-    uint32_t crc32_chorba_sse41(uint32_t crc32, const uint8_t *buf, size_t len);
+    uint32_t crc32_chorba_sse41(uint32_t crc, const uint8_t *buf, size_t len);
+    uint32_t crc32_copy_chorba_sse41(uint32_t crc, uint8_t *dst, const uint8_t *src, size_t len);
 #endif
 
 #ifdef X86_SSE42
@@ -74,18 +77,12 @@ uint32_t adler32_copy_avx512_vnni(uint32_t adler, uint8_t *dst, const uint8_t *s
 #endif
 
 #ifdef X86_PCLMULQDQ_CRC
-uint32_t crc32_fold_pclmulqdq_reset(crc32_fold *crc);
-void     crc32_fold_pclmulqdq_copy(crc32_fold *crc, uint8_t *dst, const uint8_t *src, size_t len);
-void     crc32_fold_pclmulqdq(crc32_fold *crc, const uint8_t *src, size_t len, uint32_t init_crc);
-uint32_t crc32_fold_pclmulqdq_final(crc32_fold *crc);
-uint32_t crc32_pclmulqdq(uint32_t crc32, const uint8_t *buf, size_t len);
+uint32_t crc32_pclmulqdq(uint32_t crc, const uint8_t *buf, size_t len);
+uint32_t crc32_copy_pclmulqdq(uint32_t crc, uint8_t *dst, const uint8_t *src, size_t len);
 #endif
 #ifdef X86_VPCLMULQDQ_CRC
-uint32_t crc32_fold_vpclmulqdq_reset(crc32_fold *crc);
-void     crc32_fold_vpclmulqdq_copy(crc32_fold *crc, uint8_t *dst, const uint8_t *src, size_t len);
-void     crc32_fold_vpclmulqdq(crc32_fold *crc, const uint8_t *src, size_t len, uint32_t init_crc);
-uint32_t crc32_fold_vpclmulqdq_final(crc32_fold *crc);
-uint32_t crc32_vpclmulqdq(uint32_t crc32, const uint8_t *buf, size_t len);
+uint32_t crc32_vpclmulqdq(uint32_t crc, const uint8_t *buf, size_t len);
+uint32_t crc32_copy_vpclmulqdq(uint32_t crc, uint8_t *dst, const uint8_t *src, size_t len);
 #endif
 
 #ifdef DISABLE_RUNTIME_CPU_DETECTION
@@ -114,6 +111,8 @@ uint32_t crc32_vpclmulqdq(uint32_t crc32, const uint8_t *buf, size_t len);
 #  if defined(X86_SSSE3) && defined(__SSSE3__)
 #    undef native_adler32
 #    define native_adler32 adler32_ssse3
+#    undef native_adler32_copy
+#    define native_adler32_copy adler32_copy_ssse3
 #    undef native_chunkmemset_safe
 #    define native_chunkmemset_safe chunkmemset_safe_ssse3
 #    undef native_inflate_fast
@@ -123,6 +122,8 @@ uint32_t crc32_vpclmulqdq(uint32_t crc32, const uint8_t *buf, size_t len);
 #  if defined(X86_SSE41) && defined(__SSE4_1__) && !defined(WITHOUT_CHORBA_SSE)
 #   undef native_crc32
 #   define native_crc32 crc32_chorba_sse41
+#   undef native_crc32_copy
+#   define native_crc32_copy crc32_copy_chorba_sse41
 #  endif
 // X86 - SSE4.2
 #  if defined(X86_SSE42) && defined(__SSE4_2__)
@@ -133,14 +134,8 @@ uint32_t crc32_vpclmulqdq(uint32_t crc32, const uint8_t *buf, size_t len);
 #  if defined(X86_PCLMULQDQ_CRC) && defined(__PCLMUL__)
 #    undef native_crc32
 #    define native_crc32 crc32_pclmulqdq
-#    undef native_crc32_fold
-#    define native_crc32_fold crc32_fold_pclmulqdq
-#    undef native_crc32_fold_copy
-#    define native_crc32_fold_copy crc32_fold_pclmulqdq_copy
-#    undef native_crc32_fold_final
-#    define native_crc32_fold_final crc32_fold_pclmulqdq_final
-#    undef native_crc32_fold_reset
-#    define native_crc32_fold_reset crc32_fold_pclmulqdq_reset
+#    undef native_crc32_copy
+#    define native_crc32_copy crc32_copy_pclmulqdq
 #  endif
 // X86 - AVX2
 #  if defined(X86_AVX2) && defined(__AVX2__)
@@ -192,14 +187,8 @@ uint32_t crc32_vpclmulqdq(uint32_t crc32, const uint8_t *buf, size_t len);
 #    if defined(__PCLMUL__) && defined(__AVX512F__) && defined(__VPCLMULQDQ__)
 #      undef native_crc32
 #      define native_crc32 crc32_vpclmulqdq
-#      undef native_crc32_fold
-#      define native_crc32_fold crc32_fold_vpclmulqdq
-#      undef native_crc32_fold_copy
-#      define native_crc32_fold_copy crc32_fold_vpclmulqdq_copy
-#      undef native_crc32_fold_final
-#      define native_crc32_fold_final crc32_fold_vpclmulqdq_final
-#      undef native_crc32_fold_reset
-#      define native_crc32_fold_reset crc32_fold_vpclmulqdq_reset
+#      undef native_crc32_copy
+#      define native_crc32_copy crc32_copy_vpclmulqdq
 #    endif
 #  endif
 #endif
