@@ -12,21 +12,14 @@ extern "C" {
 #  include "zbuild.h"
 #  include "arch_functions.h"
 #  include "test_cpu_features.h"
-#  include "crc32_test_strings_p.h"
+#  include "hash_test_strings_p.h"
 }
 
-class crc32_variant : public ::testing::TestWithParam<crc32_test> {
+class crc32_variant : public ::testing::TestWithParam<hash_test> {
 public:
-    void hash(crc32_test param, crc32_func crc32) {
-        uint32_t crc = 0;
-        if (param.buf != NULL) {
-            if (param.len) {
-                crc = crc32(param.crc, param.buf, param.len);
-            } else {
-                crc = param.crc;
-            }
-        }
-        EXPECT_EQ(crc, param.expect);
+    void hash(hash_test param, crc32_func crc32) {
+        uint32_t crc = crc32(param.initial_crc, param.buf, param.len);
+        EXPECT_EQ(crc, param.expect_crc);
     }
 };
 
@@ -37,11 +30,7 @@ class crc32_align : public ::testing::TestWithParam<int> {
 public:
     void hash(int param, crc32_func crc32) {
         uint8_t *buf = (uint8_t*)zng_alloc(sizeof(uint8_t) * (128 + param));
-        if (buf != NULL) {
-            (void)crc32(0, buf + param, 128);
-        } else {
-            FAIL();
-        }
+        (void)crc32(0, buf + param, 128);
         zng_free(buf);
     }
 };
@@ -69,7 +58,7 @@ public:
 
 uint8_t *crc32_large_buf::buffer = nullptr;
 
-INSTANTIATE_TEST_SUITE_P(crc32, crc32_variant, testing::ValuesIn(crc32_tests));
+INSTANTIATE_TEST_SUITE_P(crc32, crc32_variant, testing::ValuesIn(hash_tests));
 
 #define TEST_CRC32(name, func, support_flag) \
     TEST_P(crc32_variant, name) { \

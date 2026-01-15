@@ -16,9 +16,6 @@
 #include "adler32_avx512_p.h"
 
 Z_FORCEINLINE static uint32_t adler32_copy_impl(uint32_t adler, uint8_t *dst, const uint8_t *src, size_t len, const int COPY) {
-    if (UNLIKELY(src == NULL)) return 1L;
-    if (UNLIKELY(len == 0)) return adler;
-
     uint32_t adler0, adler1;
     adler1 = (adler >> 16) & 0xffff;
     adler0 = adler & 0xffff;
@@ -26,7 +23,7 @@ Z_FORCEINLINE static uint32_t adler32_copy_impl(uint32_t adler, uint8_t *dst, co
 rem_peel:
     if (len < 64) {
         /* This handles the remaining copies, just call normal adler checksum after this */
-        if (COPY) {
+        if (COPY && len) {
             __mmask64 storemask = (0xFFFFFFFFFFFFFFFFUL >> (64 - len));
             __m512i copy_vec = _mm512_maskz_loadu_epi8(storemask, src);
             _mm512_mask_storeu_epi8(dst, storemask, copy_vec);
