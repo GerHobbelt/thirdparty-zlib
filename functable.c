@@ -14,6 +14,10 @@
 #include "functable.h"
 #include "cpu_features.h"
 
+static void force_init_empty(void) {
+    // empty
+}
+
 static void init_functable(void) {
 	struct functable_s ft = {0};
     struct cpu_features cf;
@@ -21,6 +25,7 @@ static void init_functable(void) {
     cpu_check_features(&cf);
 
     // Generic code
+    ft.force_init = &force_init_empty;
     ft.adler32 = &adler32_c;
     ft.adler32_fold_copy = &adler32_fold_copy_c;
     ft.chunkmemset_safe = &chunkmemset_safe_c;
@@ -237,6 +242,7 @@ static void init_functable(void) {
 #endif
 
     // Assign function pointers individually for atomic operation
+    functable.force_init = ft.force_init;
 	functable.adler32 = ft.adler32;
     functable.adler32_fold_copy = ft.adler32_fold_copy;
     functable.chunkmemset_safe = ft.chunkmemset_safe;
@@ -257,6 +263,10 @@ static void init_functable(void) {
 }
 
 /* stub functions */
+static void force_init_stub(void) {
+    init_functable();
+}
+
 static uint32_t adler32_stub(uint32_t adler, const uint8_t* buf, size_t len) {
     init_functable();
     return functable.adler32(adler, buf, len);
@@ -344,6 +354,7 @@ static uint32_t update_hash_stub(deflate_state* const s, uint32_t h, uint32_t va
 
 /* functable init */
 Z_INTERNAL Z_TLS struct functable_s functable = {
+    force_init_stub,
     adler32_stub,
     adler32_fold_copy_stub,
     chunkmemset_safe_stub,
