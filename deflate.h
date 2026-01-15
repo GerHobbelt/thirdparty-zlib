@@ -119,20 +119,9 @@ typedef uint16_t Pos;
 /* Type definitions for hash callbacks */
 typedef struct internal_state deflate_state;
 
-typedef uint32_t (* update_hash_cb)        (uint32_t h, uint32_t val);
 typedef void     (* insert_string_cb)      (deflate_state *const s, uint32_t str, uint32_t count);
-typedef Pos      (* quick_insert_string_cb)(deflate_state *const s, uint32_t str);
-typedef Pos      (* quick_insert_value_cb) (deflate_state *const s, uint32_t str, uint32_t val);
-
-uint32_t update_hash             (uint32_t h, uint32_t val);
 void     insert_string           (deflate_state *const s, uint32_t str, uint32_t count);
-Pos      quick_insert_string     (deflate_state *const s, uint32_t str);
-Pos      quick_insert_value      (deflate_state *const s, uint32_t str, uint32_t val);
-
-uint32_t update_hash_roll        (uint32_t h, uint32_t val);
 void     insert_string_roll      (deflate_state *const s, uint32_t str, uint32_t count);
-Pos      quick_insert_string_roll(deflate_state *const s, uint32_t str);
-Pos      quick_insert_value_roll (deflate_state *const s, uint32_t str, uint32_t val);
 
 /* Struct for memory allocation handling */
 typedef struct deflate_allocs_s {
@@ -166,8 +155,7 @@ struct ALIGNED_(64) internal_state {
                 /* used by deflate.c: */
 
     unsigned int  w_size;            /* LZ77 window size (32K by default) */
-    unsigned int  w_bits;            /* log2(w_size)  (8..16) */
-    unsigned int  w_mask;            /* w_size - 1 */
+    unsigned int  padding3[2];
     unsigned int  lookahead;         /* number of valid bytes ahead in window */
 
     unsigned int high_water;
@@ -232,13 +220,6 @@ struct ALIGNED_(64) internal_state {
      * greater than this length. This saves time but degrades compression.
      * max_insert_length is used only for compression levels <= 6.
      */
-
-    update_hash_cb          update_hash;
-    insert_string_cb        insert_string;
-    quick_insert_string_cb  quick_insert_string;
-    quick_insert_value_cb   quick_insert_value;
-    /* Hash function callbacks that can be configured depending on the deflate
-     * algorithm being used */
 
     int level;    /* compression level (1..9) */
     int strategy; /* favor or force Huffman coding*/
@@ -421,6 +402,32 @@ static inline void put_uint64(deflate_state *s, uint64_t lld) {
 /* In order to simplify the code, particularly on 16 bit machines, match
  * distances are limited to MAX_DIST instead of WSIZE.
  */
+
+#define W_MASK(s)  ((s)->w_size - 1)
+/* Window mask: w_size is always a power of 2, so w_mask = w_size - 1 */
+
+#ifdef HAVE_BUILTIN_CTZ
+#  define W_BITS(s)  ((unsigned int)__builtin_ctz((s)->w_size))
+#else
+/* Fallback for w_size which is always a power of 2 between 256 and 32768 */
+static inline unsigned int compute_w_bits(unsigned int w_size) {
+    /* Switch ordered by likelihood - most common first (MAX_WBITS=15 -> 32768) */
+    switch (w_size) {
+        case 32768: return 15;  /* MAX_WBITS default */
+        case 16384: return 14;
+        case  8192: return 13;
+        case  4096: return 12;
+        case  2048: return 11;
+        case  1024: return 10;
+        case   512: return  9;
+        case   256: return  8;
+    }
+    Assert(w_size >= 256 && w_size <= 32768, "invalid w_size");
+    return 0;
+}
+#  define W_BITS(s)  compute_w_bits((s)->w_size)
+#endif
+/* Window bits: log2(w_size), computed from w_size since w_size is a power of 2 */
 
 #define WIN_INIT STD_MAX_MATCH
 /* Number of bytes after end of data in window to initialize in order to avoid
