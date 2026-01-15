@@ -19,6 +19,7 @@
  * matches. It is used only for the fast compression options.
  */
 Z_INTERNAL block_state deflate_fast(deflate_state *s, int flush) {
+    unsigned char *window = s->window;
     int bflush = 0;       /* set if current block must be flushed */
     uint32_t match_len = 0;
 
@@ -44,11 +45,11 @@ Z_INTERNAL block_state deflate_fast(deflate_state *s, int flush) {
          */
         if (s->lookahead >= WANT_MIN_MATCH) {
 #if BYTE_ORDER == LITTLE_ENDIAN
-            uint32_t str_val = zng_memread_4(&s->window[s->strstart]);
+            uint32_t str_val = zng_memread_4(window + s->strstart);
 #else
-            uint32_t str_val = ZSWAP32(zng_memread_4(&s->window[s->strstart]));
+            uint32_t str_val = ZSWAP32(zng_memread_4(window + s->strstart));
 #endif
-            Pos hash_head = quick_insert_value(s, s->strstart, str_val);
+            uint32_t hash_head = quick_insert_value(s, s->strstart, str_val);
             int64_t dist = (int64_t)s->strstart - hash_head;
             lc = (uint8_t)str_val;
 
@@ -60,17 +61,17 @@ Z_INTERNAL block_state deflate_fast(deflate_state *s, int flush) {
                  * of window index 0 (in particular we have to avoid a match
                  * of the string with itself at the start of the input file).
                  */
-                match_len = FUNCTABLE_CALL(longest_match)(s, hash_head);
+                match_len = FUNCTABLE_CALL(longest_match)(s, (uint32_t)hash_head);
                 /* longest_match() sets match_start */
             }
         } else {
-            lc = s->window[s->strstart];
+            lc = window[s->strstart];
         }
 
         if (match_len >= WANT_MIN_MATCH) {
             Assert(s->strstart <= UINT16_MAX, "strstart should fit in uint16_t");
             Assert(s->match_start <= UINT16_MAX, "match_start should fit in uint16_t");
-            check_match(s, (Pos)s->strstart, (Pos)s->match_start, match_len);
+            check_match(s, s->strstart, s->match_start, match_len);
 
             bflush = zng_tr_tally_dist(s, s->strstart - s->match_start, match_len - STD_MIN_MATCH);
 

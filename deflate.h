@@ -134,7 +134,12 @@ typedef struct deflate_allocs_s {
     Pos             *head;
 } deflate_allocs;
 
+#ifdef _MSC_VER
+#pragma warning(push)
+#pragma warning(error : 4820)
+#endif
 struct ALIGNED_(64) internal_state {
+                /* Cacheline 0 */
     PREFIX3(stream)      *strm;            /* pointer back to this zlib stream */
     unsigned char        *pending_buf;     /* output still pending */
     unsigned char        *pending_out;     /* next pending byte to output to the stream */
@@ -152,11 +157,18 @@ struct ALIGNED_(64) internal_state {
      * This is set to 1 if there is an active block, or 0 if the block was just closed.
      */
 
-                /* used by deflate.c: */
+    // Align to cacheline size
+#if defined(_M_IX86) || defined(_M_ARM)
+    int32_t padding0[4];
+#endif
+                /* Cacheline 1 */
 
-    unsigned int  w_size;            /* LZ77 window size (32K by default) */
-    unsigned int  padding3[2];
-    unsigned int  lookahead;         /* number of valid bytes ahead in window */
+    unsigned int  lookahead;    /* number of valid bytes ahead in window */
+    unsigned int strstart;      /* start of string to insert */
+    unsigned int  w_size;       /* LZ77 window size (32K by default) */
+
+    int block_start;            /* Window position at the beginning of the current output block.
+                                 * Gets negative when the window is moved backwards. */
 
     unsigned int high_water;
     /* High water mark offset in window for initialized bytes -- bytes above
@@ -190,15 +202,16 @@ struct ALIGNED_(64) internal_state {
 
     uint32_t ins_h; /* hash index of string to be inserted */
 
-    int block_start;
-    /* Window position at the beginning of the current output block. Gets
-     * negative when the window is moved backwards.
-     */
-
     unsigned int match_length;       /* length of best match */
-    Pos          prev_match;         /* previous match */
     int          match_available;    /* set if previous match exists */
-    unsigned int strstart;           /* start of string to insert */
+    uint32_t     prev_match;         /* previous match (used by deflate_slow) */
+
+    // Align to cacheline size
+#if defined(_M_IX86) || defined(_M_ARM)
+    int32_t padding1[3];
+#endif
+                /* Cacheline 2 */
+
     unsigned int match_start;        /* start of matching string */
 
     unsigned int prev_length;
@@ -221,17 +234,28 @@ struct ALIGNED_(64) internal_state {
      * max_insert_length is used only for compression levels <= 6.
      */
 
-    int level;    /* compression level (1..9) */
-    int strategy; /* favor or force Huffman coding*/
+    int level;                  /* compression level (1..9) */
+    int strategy;               /* favor or force Huffman coding*/
+    unsigned int good_match;    /* Use a faster search when the previous match is longer than this */
+    int nice_match;             /* Stop searching when current match exceeds this */
+    unsigned int matches;       /* number of string matches in current block */
+    unsigned int insert;        /* bytes at end of window left to insert */
 
-    unsigned int good_match;
-    /* Use a faster search when the previous match is longer than this */
+    uint64_t bi_buf;            /* Output buffer.
+                                 * Bits are inserted starting at the bottom (least significant bits). */
+    int32_t bi_valid;           /* Number of valid bits in bi_buf.
+                                 * All bits above the last valid bit are always zero. */
 
-    int nice_match; /* Stop searching when current match exceeds this */
+    int heap_len;               /* number of elements in the heap */
+    int heap_max;               /* element of largest frequency */
+
+    int32_t padding2[1];
 
 #if defined(_M_IX86) || defined(_M_ARM)
-    int padding[2];
+    int32_t padding3[4];
 #endif
+
+                /* Cacheline 3 */
 
     struct crc32_fold_s ALIGNED_(16) crc_fold;
 
@@ -249,8 +273,6 @@ struct ALIGNED_(64) internal_state {
     /* number of codes at each bit length for an optimal tree */
 
     int heap[2*L_CODES+1];      /* heap used to build the Huffman trees */
-    int heap_len;               /* number of elements in the heap */
-    int heap_max;               /* element of largest frequency */
     /* The sons of heap[n] are heap[2*n] and heap[2*n+1]. heap[0] is not used.
      * The same heap array is used to build all trees.
      */
@@ -258,6 +280,8 @@ struct ALIGNED_(64) internal_state {
     unsigned char depth[2*L_CODES+1];
     /* Depth of each subtree used as tie breaker for trees of equal frequency
      */
+
+    unsigned char padding4[4 - ((2*L_CODES+1) % 4)];
 
     unsigned int  lit_bufsize;
     /* Size of match buffer for literals/lengths.  There are 4 reasons for
@@ -291,14 +315,8 @@ struct ALIGNED_(64) internal_state {
     unsigned int sym_next;        /* running index in symbol buffer */
     unsigned int sym_end;         /* symbol table full when sym_next reaches this */
 
-    unsigned long opt_len;        /* bit length of current block with optimal trees */
-    unsigned long static_len;     /* bit length of current block with static trees */
-    unsigned int matches;         /* number of string matches in current block */
-    unsigned int insert;          /* bytes at end of window left to insert */
-
-    /* compressed_len and bits_sent are only used if ZLIB_DEBUG is defined */
-    unsigned long compressed_len; /* total bit length of compressed file mod 2^32 */
-    unsigned long bits_sent;      /* bit length of compressed data sent mod 2^32 */
+    unsigned int opt_len;         /* bit length of current block with optimal trees */
+    unsigned int static_len;      /* bit length of current block with static trees */
 
     deflate_allocs *alloc_bufs;
 
@@ -306,18 +324,24 @@ struct ALIGNED_(64) internal_state {
     arch_deflate_state arch;      /* architecture-specific extensions */
 #endif
 
-    uint64_t bi_buf;
-    /* Output buffer. bits are inserted starting at the bottom (least significant bits). */
-
-    int32_t bi_valid;
-    /* Number of valid bits in bi_buf.  All bits above the last valid bit are always zero. */
+    /* compressed_len and bits_sent are only used if ZLIB_DEBUG is defined */
+#ifdef ZLIB_DEBUG
+    unsigned long compressed_len; /* total bit length of compressed file mod 2^32 */
+    unsigned long bits_sent;      /* bit length of compressed data sent mod 2^32 */
+#else
+    unsigned long unused[2];
+#endif
 
     /* Reserved for future use and alignment purposes */
-    int32_t reserved[19];
+    int32_t reserved[10];
+
 #if defined(_M_IX86) || defined(_M_ARM)
-    int32_t padding2[4];
+    int32_t padding5[8];
 #endif
 };
+#ifdef _MSC_VER
+#pragma warning(pop)
+#endif
 
 typedef enum {
     need_more,      /* block not completed, need more input or more output */

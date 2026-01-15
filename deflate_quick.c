@@ -46,7 +46,9 @@ extern const ct_data static_dtree[D_CODES];
 }
 
 Z_INTERNAL block_state deflate_quick(deflate_state *s, int flush) {
+    unsigned char *window;
     unsigned last = (flush == Z_FINISH) ? 1 : 0;
+
     if (UNLIKELY(last && s->block_open != 2)) {
         /* Emit end of previous block */
         QUICK_END_BLOCK(s, 0);
@@ -57,6 +59,8 @@ Z_INTERNAL block_state deflate_quick(deflate_state *s, int flush) {
            input data is given an empty block will not be written */
         QUICK_START_BLOCK(s, last);
     }
+
+    window = s->window;
 
     for (;;) {
         uint8_t lc;
@@ -85,16 +89,16 @@ Z_INTERNAL block_state deflate_quick(deflate_state *s, int flush) {
 
         if (LIKELY(s->lookahead >= WANT_MIN_MATCH)) {
 #if BYTE_ORDER == LITTLE_ENDIAN
-            uint32_t str_val = zng_memread_4(&s->window[s->strstart]);
+            uint32_t str_val = zng_memread_4(window + s->strstart);
 #else
-            uint32_t str_val = ZSWAP32(zng_memread_4(&s->window[s->strstart]));
+            uint32_t str_val = ZSWAP32(zng_memread_4(window + s->strstart));
 #endif
-            Pos hash_head = quick_insert_value(s, s->strstart, str_val);
+            uint32_t hash_head = quick_insert_value(s, s->strstart, str_val);
             int64_t dist = (int64_t)s->strstart - hash_head;
             lc = (uint8_t)str_val;
 
             if (dist <= MAX_DIST(s) && dist > 0) {
-                const uint8_t *match_start = s->window + hash_head;
+                const uint8_t *match_start = window + hash_head;
 #if BYTE_ORDER == LITTLE_ENDIAN
                 uint32_t match_val = zng_memread_4(match_start);
 #else
@@ -102,17 +106,16 @@ Z_INTERNAL block_state deflate_quick(deflate_state *s, int flush) {
 #endif
 
                 if (str_val == match_val) {
-                    const uint8_t *str_start = s->window + s->strstart;
+                    const uint8_t *str_start = window + s->strstart;
                     uint32_t match_len = FUNCTABLE_CALL(compare256)(str_start+2, match_start+2) + 2;
 
                     if (match_len >= WANT_MIN_MATCH) {
                         if (UNLIKELY(match_len > s->lookahead))
                             match_len = s->lookahead;
-                        if (UNLIKELY(match_len > STD_MAX_MATCH))
-                            match_len = STD_MAX_MATCH;
 
+                        Assert(match_len <= STD_MAX_MATCH, "match too long");
                         Assert(s->strstart <= UINT16_MAX, "strstart should fit in uint16_t");
-                        check_match(s, (Pos)s->strstart, hash_head, match_len);
+                        check_match(s, s->strstart, hash_head, match_len);
 
                         zng_tr_emit_dist(s, static_ltree, static_dtree, match_len - STD_MIN_MATCH, (uint32_t)dist);
                         s->lookahead -= match_len;
@@ -122,7 +125,7 @@ Z_INTERNAL block_state deflate_quick(deflate_state *s, int flush) {
                 }
             }
         } else {
-            lc = s->window[s->strstart];
+            lc = window[s->strstart];
         }
         zng_tr_emit_lit(s, static_ltree, lc);
         s->strstart++;
