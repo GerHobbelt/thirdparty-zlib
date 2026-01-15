@@ -35,8 +35,8 @@ extern uint32_t adler32_copy_lsx(uint32_t adler, uint8_t *dst, const uint8_t *sr
 extern uint32_t adler32_lsx(uint32_t adler, const uint8_t *src, size_t len);
 
 static inline uint32_t adler32_copy_impl(uint32_t adler, uint8_t *dst, const uint8_t *src, size_t len, const int COPY) {
-    if (src == NULL) return 1L;
-    if (len == 0) return adler;
+    if (UNLIKELY(src == NULL)) return 1L;
+    if (UNLIKELY(len == 0)) return adler;
 
     uint32_t adler0, adler1;
     adler1 = (adler >> 16) & 0xffff;
@@ -44,11 +44,7 @@ static inline uint32_t adler32_copy_impl(uint32_t adler, uint8_t *dst, const uin
 
 rem_peel:
     if (len < 16) {
-        if (COPY) {
-            return adler32_copy_len_16(adler0, src, dst, len, adler1);
-        } else {
-            return adler32_len_16(adler0, src, len, adler1);
-        }
+        return adler32_copy_len_16(adler0, dst, src, len, adler1, COPY);
     } else if (len < 32) {
         if (COPY) {
             return adler32_copy_lsx(adler, dst, src, len);
