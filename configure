@@ -1085,22 +1085,6 @@ EOF
     fi
 }
 
-check_mask_intrinsics() {
-    # Check whether compiler supports AVX512 k-mask intrinsics
-    cat > $test.c << EOF
-#include <immintrin.h>
-__mmask16 f(__mmask16 x) { return _knot_mask16(x); }
-int main(void) { return 0; }
-EOF
-    if try ${CC} ${CFLAGS} ${avx512flag} $test.c; then
-        echo "Checking for AVX512 k-mask intrinsics ... Yes." | tee -a configure.log
-        HAVE_MASK_INTRIN=1
-    else
-        echo "Checking for AVX512 k-mask intrinsics ... No." | tee -a configure.log
-        HAVE_MASK_INTRIN=0
-    fi
-}
-
 check_acle_compiler_flag() {
     # Check whether -march=armv8-a+crc works correctly
     cat > $test.c << EOF
@@ -1480,59 +1464,10 @@ case "${ARCH}" in
             ARCH_STATIC_OBJS="${ARCH_STATIC_OBJS} x86_features.o"
             ARCH_SHARED_OBJS="${ARCH_SHARED_OBJS} x86_features.lo"
 
-            check_avx2_intrinsics
+            check_xsave_intrinsics
 
-            if test ${HAVE_AVX2_INTRIN} -eq 1; then
-                CFLAGS="${CFLAGS} -DX86_AVX2"
-                SFLAGS="${SFLAGS} -DX86_AVX2"
-                ARCH_STATIC_OBJS="${ARCH_STATIC_OBJS} slide_hash_avx2.o chunkset_avx2.o compare256_avx2.o adler32_avx2.o"
-                ARCH_SHARED_OBJS="${ARCH_SHARED_OBJS} slide_hash_avx2.lo chunkset_avx2.lo compare256_avx2.lo adler32_avx2.lo"
-            fi
-
-            check_avx512_intrinsics
-
-            if test ${HAVE_AVX512_INTRIN} -eq 1; then
-                CFLAGS="${CFLAGS} -DX86_AVX512"
-                SFLAGS="${SFLAGS} -DX86_AVX512"
-                ARCH_STATIC_OBJS="${ARCH_STATIC_OBJS} adler32_avx512.o"
-                ARCH_SHARED_OBJS="${ARCH_SHARED_OBJS} adler32_avx512.lo"
-
-                check_mask_intrinsics
-
-                if test ${HAVE_MASK_INTRIN} -eq 1; then
-                    CFLAGS="${CFLAGS} -DX86_MASK_INTRIN"
-                    SFLAGS="${SFLAGS} -DX86_MASK_INTRIN"
-                fi
-            fi
-
-            check_mtune_cascadelake_compiler_flag
-
-            if test ${MTUNE_CASCADELAKE_AVAILABLE} -eq 1; then
-                avx512flag="${avx512flag} -mtune=cascadelake"
-                avx512vnniflag="${avx512vnniflag} -mtune=cascadelake"
-            else
-                if test ${MTUNE_SKYLAKE_AVX512_AVAILABLE} -eq 1; then
-                    avx512flag="${avx512flag} -mtune=skylake-avx512"
-                    avx512vnniflag="${avx512vnniflag} -mtune=skylake-avx512"
-                fi
-            fi
-
-            check_avx512vnni_intrinsics
-
-            if test ${HAVE_AVX512VNNI_INTRIN} -eq 1; then
-                CFLAGS="${CFLAGS} -DX86_AVX512VNNI"
-                SFLAGS="${SFLAGS} -DX86_AVX512VNNI"
-                ARCH_STATIC_OBJS="${ARCH_STATIC_OBJS} adler32_avx512_vnni.o"
-                ARCH_SHARED_OBJS="${ARCH_SHARED_OBJS} adler32_avx512_vnni.lo"
-            fi
-
-            check_sse42_intrinsics
-
-            if test ${HAVE_SSE42_INTRIN} -eq 1; then
-                CFLAGS="${CFLAGS} -DX86_SSE42"
-                SFLAGS="${SFLAGS} -DX86_SSE42"
-                ARCH_STATIC_OBJS="${ARCH_STATIC_OBJS} adler32_sse42.o insert_string_sse42.o"
-                ARCH_SHARED_OBJS="${ARCH_SHARED_OBJS} adler32_sse42.lo insert_string_sse42.lo"
+            if test ${HAVE_XSAVE_INTRIN} -eq 0; then
+                xsaveflag=""
             fi
 
             check_sse2_intrinsics
@@ -1558,6 +1493,15 @@ case "${ARCH}" in
                 ARCH_SHARED_OBJS="${ARCH_SHARED_OBJS} adler32_ssse3.lo chunkset_ssse3.lo"
             fi
 
+            check_sse42_intrinsics
+
+            if test ${HAVE_SSE42_INTRIN} -eq 1; then
+                CFLAGS="${CFLAGS} -DX86_SSE42"
+                SFLAGS="${SFLAGS} -DX86_SSE42"
+                ARCH_STATIC_OBJS="${ARCH_STATIC_OBJS} adler32_sse42.o insert_string_sse42.o"
+                ARCH_SHARED_OBJS="${ARCH_SHARED_OBJS} adler32_sse42.lo insert_string_sse42.lo"
+            fi
+
             check_pclmulqdq_intrinsics
 
             if test ${HAVE_PCLMULQDQ_INTRIN} -eq 1; then
@@ -1565,23 +1509,56 @@ case "${ARCH}" in
                 SFLAGS="${SFLAGS} -DX86_PCLMULQDQ_CRC"
                 ARCH_STATIC_OBJS="${ARCH_STATIC_OBJS} crc32_pclmulqdq.o"
                 ARCH_SHARED_OBJS="${ARCH_SHARED_OBJS} crc32_pclmulqdq.lo"
+            fi
 
-                if test $buildvpclmulqdq -eq 1; then
-                    check_vpclmulqdq_intrinsics
+            check_avx2_intrinsics
 
-                    if test ${HAVE_VPCLMULQDQ_INTRIN} -eq 1 && test ${HAVE_AVX512_INTRIN} -eq 1; then
-                        CFLAGS="${CFLAGS} -DX86_VPCLMULQDQ_CRC"
-                        SFLAGS="${SFLAGS} -DX86_VPCLMULQDQ_CRC"
-                        ARCH_STATIC_OBJS="${ARCH_STATIC_OBJS} crc32_vpclmulqdq.o"
-                        ARCH_SHARED_OBJS="${ARCH_SHARED_OBJS} crc32_vpclmulqdq.lo"
-                    fi
+            if test ${HAVE_AVX2_INTRIN} -eq 1; then
+                CFLAGS="${CFLAGS} -DX86_AVX2"
+                SFLAGS="${SFLAGS} -DX86_AVX2"
+                ARCH_STATIC_OBJS="${ARCH_STATIC_OBJS} slide_hash_avx2.o chunkset_avx2.o compare256_avx2.o adler32_avx2.o"
+                ARCH_SHARED_OBJS="${ARCH_SHARED_OBJS} slide_hash_avx2.lo chunkset_avx2.lo compare256_avx2.lo adler32_avx2.lo"
+            fi
+
+            check_avx512_intrinsics
+
+            if test ${HAVE_AVX512_INTRIN} -eq 1; then
+                CFLAGS="${CFLAGS} -DX86_AVX512"
+                SFLAGS="${SFLAGS} -DX86_AVX512"
+                ARCH_STATIC_OBJS="${ARCH_STATIC_OBJS} adler32_avx512.o"
+                ARCH_SHARED_OBJS="${ARCH_SHARED_OBJS} adler32_avx512.lo"
+            fi
+
+            check_mtune_cascadelake_compiler_flag
+
+            if test ${MTUNE_CASCADELAKE_AVAILABLE} -eq 1; then
+                avx512flag="${avx512flag} -mtune=cascadelake"
+                avx512vnniflag="${avx512vnniflag} -mtune=cascadelake"
+            else
+                if test ${MTUNE_SKYLAKE_AVX512_AVAILABLE} -eq 1; then
+                    avx512flag="${avx512flag} -mtune=skylake-avx512"
+                    avx512vnniflag="${avx512vnniflag} -mtune=skylake-avx512"
                 fi
             fi
 
-            check_xsave_intrinsics
+            check_avx512vnni_intrinsics
 
-            if test ${HAVE_XSAVE_INTRIN} -eq 0; then
-                xsaveflag=""
+            if test ${HAVE_AVX512VNNI_INTRIN} -eq 1; then
+                CFLAGS="${CFLAGS} -DX86_AVX512VNNI"
+                SFLAGS="${SFLAGS} -DX86_AVX512VNNI"
+                ARCH_STATIC_OBJS="${ARCH_STATIC_OBJS} adler32_avx512_vnni.o"
+                ARCH_SHARED_OBJS="${ARCH_SHARED_OBJS} adler32_avx512_vnni.lo"
+            fi
+
+            if test $buildvpclmulqdq -eq 1 && test ${HAVE_PCLMULQDQ_INTRIN} -eq 1 && test ${HAVE_AVX512_INTRIN} -eq 1; then
+                check_vpclmulqdq_intrinsics
+
+                if test ${HAVE_VPCLMULQDQ_INTRIN} -eq 1; then
+                    CFLAGS="${CFLAGS} -DX86_VPCLMULQDQ_CRC"
+                    SFLAGS="${SFLAGS} -DX86_VPCLMULQDQ_CRC"
+                    ARCH_STATIC_OBJS="${ARCH_STATIC_OBJS} crc32_vpclmulqdq.o"
+                    ARCH_SHARED_OBJS="${ARCH_SHARED_OBJS} crc32_vpclmulqdq.lo"
+                fi
             fi
         fi
     ;;

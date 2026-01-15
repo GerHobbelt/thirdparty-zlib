@@ -109,21 +109,12 @@ macro(check_avx512_intrinsics)
         int main(void) { return 0; }"
         HAVE_AVX512_INTRIN
     )
-
-    # Evidently both GCC and clang were late to implementing these
-    check_c_source_compiles(
-        "#include <immintrin.h>
-        __mmask16 f(__mmask16 x) { return _knot_mask16(x); }
-        int main(void) { return 0; }"
-        HAVE_MASK_INTRIN
-    )
-    set(CMAKE_REQUIRED_FLAGS)
 endmacro()
 
 macro(check_avx512vnni_intrinsics)
     if(CMAKE_C_COMPILER_ID MATCHES "Intel")
         if(CMAKE_HOST_UNIX OR APPLE)
-            set(AVX512VNNIFLAG "-mavx512f -mavx512bw -mavx512dq -mavx512vl -mavx512vnni")
+            set(AVX512VNNIFLAG "-mavx512f -mavx512dq -mavx512bw -mavx512vl -mavx512vnni")
         else()
             set(AVX512VNNIFLAG "/arch:AVX512")
         endif()
