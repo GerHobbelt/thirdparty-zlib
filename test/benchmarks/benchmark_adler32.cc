@@ -3,63 +3,60 @@
  * For conditions of distribution and use, see copyright notice in zlib.h
  */
 
-#include <stdio.h>
-#include <assert.h>
-
 #include <benchmark/benchmark.h>
+#include <assert.h>
 
 extern "C" {
 #  include "zbuild.h"
-#  include "zutil_p.h"
 #  include "arch_functions.h"
 #  include "../test_cpu_features.h"
 }
 
-#define MAX_RANDOM_INTS (1024 * 1024)
-#define MAX_RANDOM_INTS_SIZE (MAX_RANDOM_INTS * sizeof(uint32_t))
+#define BUFSIZE ((4 * 1024 * 1024) + 64)
 
 class adler32: public benchmark::Fixture {
 private:
-    uint32_t *random_ints;
+    uint32_t *testdata;
 
 public:
-    void SetUp(const ::benchmark::State&) {
-        /* Control the alignment so that we have the best case scenario for loads. With
-         * AVX512, unaligned loads can mean we're crossing a cacheline boundary at every load.
-         * And while this is a realistic scenario, it makes it difficult to compare benchmark
-         * to benchmark because one allocation could have been aligned perfectly for the loads
-         * while the subsequent one happened to not be. This is not to be advantageous to AVX512
-         * (indeed, all lesser SIMD implementations benefit from this aligned allocation), but to
-         * control the _consistency_ of the results */
-        random_ints = (uint32_t *)zng_alloc(MAX_RANDOM_INTS_SIZE);
-        assert(random_ints != NULL);
+    void SetUp(::benchmark::State& state) {
+        testdata = (uint32_t *)malloc(BUFSIZE);
+        if(testdata == NULL)
+            state.SkipWithError("malloc failed");
 
-        for (int32_t i = 0; i < MAX_RANDOM_INTS; i++) {
-            random_ints[i] = rand();
+        for (uint32_t i = 0; i < BUFSIZE/sizeof(uint32_t); i++) {
+            testdata[i] = rand();
         }
     }
 
+    // Benchmark Adler32, with rolling buffer misalignment for consistent results
     void Bench(benchmark::State& state, adler32_func adler32) {
+        int misalign = 0;
         uint32_t hash = 0;
 
         for (auto _ : state) {
-            hash = adler32(hash, (const unsigned char *)random_ints, (size_t)state.range(0));
+            hash = adler32(hash, (const unsigned char *)testdata + misalign, (size_t)state.range(0));
+            if (misalign >= 63)
+                misalign = 0;
+            else
+                misalign++;
         }
 
+        // Prevent the result from being optimized away
         benchmark::DoNotOptimize(hash);
     }
 
     void TearDown(const ::benchmark::State&) {
-        zng_free(random_ints);
+        free(testdata);
     }
 };
 
-#define BENCHMARK_ADLER32(name, fptr, support_flag) \
+#define BENCHMARK_ADLER32(name, adlerfunc, support_flag) \
     BENCHMARK_DEFINE_F(adler32, name)(benchmark::State& state) { \
         if (!(support_flag)) { \
             state.SkipWithError("CPU does not support " #name); \
         } \
-        Bench(state, fptr); \
+        Bench(state, adlerfunc); \
     } \
     BENCHMARK_REGISTER_F(adler32, name)->Arg(1)->Arg(8)->Arg(12)->Arg(16)->Arg(32)->Arg(64)->Arg(512)->Arg(4<<10)->Arg(32<<10)->Arg(256<<10)->Arg(4096<<10)
 
