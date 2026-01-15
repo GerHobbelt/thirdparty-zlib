@@ -285,7 +285,7 @@ static inline void partial_fold(const size_t len, __m128i *xmm_crc0, __m128i *xm
 }
 
 static inline uint32_t crc32_copy_small(uint32_t crc, uint8_t *dst, const uint8_t *buf, size_t len, const int COPY) {
-    uint32_t c = (~crc) & 0xffffffff;
+    uint32_t c = ~crc;
 
     while (len) {
         len--;
@@ -295,7 +295,7 @@ static inline uint32_t crc32_copy_small(uint32_t crc, uint8_t *dst, const uint8_
         CRC_DO1;
     }
 
-    return c ^ 0xffffffff;
+    return ~c;
 }
 
 static inline uint32_t fold_final(__m128i *xmm_crc0, __m128i *xmm_crc1, __m128i *xmm_crc2, __m128i *xmm_crc3) {
@@ -337,11 +337,11 @@ Z_FORCEINLINE static uint32_t crc32_copy_impl(uint32_t crc, uint8_t *dst, const 
     size_t copy_len = len;
     if (len >= 16) {
         /* Calculate 16-byte alignment offset */
-        unsigned algn_diff = ((uintptr_t)16 - ((uintptr_t)src & 0xF)) & 0xF;
+        uintptr_t align_diff = ALIGN_DIFF(src, 16);
 
         /* If total length is less than (alignment bytes + 16), use the faster small method.
          * Handles both initially small buffers and cases where alignment would leave < 16 bytes */
-        copy_len = len < algn_diff + 16 ? len : algn_diff;
+        copy_len = len < align_diff + 16 ? len : align_diff;
     }
 
     if (copy_len > 0) {

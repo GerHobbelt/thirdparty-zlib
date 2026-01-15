@@ -52,7 +52,7 @@
     out3 = _mm_xor_si128(in[4], xor3); \
     } while (0)
 
-static Z_FORCEINLINE uint32_t crc32_chorba_32768_nondestructive_sse41(uint32_t crc, const uint64_t* buf, size_t len) {
+Z_FORCEINLINE static uint32_t crc32_chorba_32768_nondestructive_sse41(uint32_t crc, const uint64_t* buf, size_t len) {
     const uint64_t* input = buf;
     ALIGNED_(16) uint64_t bitbuffer[32768 / sizeof(uint64_t)];
     __m128i *bitbuffer_v = (__m128i*)bitbuffer;
@@ -305,19 +305,19 @@ static Z_FORCEINLINE uint32_t crc32_chorba_32768_nondestructive_sse41(uint32_t c
 }
 
 Z_INTERNAL uint32_t crc32_chorba_sse41(uint32_t crc, const uint8_t *buf, size_t len) {
-    uint64_t* aligned_buf;
-    uint32_t c = (~crc) & 0xffffffff;
-    uintptr_t algn_diff = ((uintptr_t)16 - ((uintptr_t)buf & 15)) & 15;
+    uint64_t *aligned_buf;
+    uint32_t c = ~crc;
+    uintptr_t align_diff = ALIGN_DIFF(buf, 16);
 
-    if (len > algn_diff + CHORBA_SMALL_THRESHOLD_64BIT) {
-        if (algn_diff) {
-            c = crc32_braid_internal(c, buf, algn_diff);
-            len -= algn_diff;
+    if (len > align_diff + CHORBA_SMALL_THRESHOLD_64BIT) {
+        if (align_diff) {
+            c = crc32_braid_internal(c, buf, align_diff);
+            len -= align_diff;
         }
-        aligned_buf = (uint64_t*) (buf + algn_diff);
+        aligned_buf = (uint64_t*)(buf + align_diff);
 #if !defined(WITHOUT_CHORBA)
-        if(len > CHORBA_LARGE_THRESHOLD) {
-            c = crc32_chorba_118960_nondestructive(c, (z_word_t*) aligned_buf, len);
+        if (len > CHORBA_LARGE_THRESHOLD) {
+            c = crc32_chorba_118960_nondestructive(c, (z_word_t*)aligned_buf, len);
         } else
 #endif
         if (len > CHORBA_MEDIUM_LOWER_THRESHOLD && len <= CHORBA_MEDIUM_UPPER_THRESHOLD) {
@@ -331,7 +331,7 @@ Z_INTERNAL uint32_t crc32_chorba_sse41(uint32_t crc, const uint8_t *buf, size_t 
     }
 
     /* Return the CRC, post-conditioned. */
-    return c ^ 0xffffffff;
+    return ~c;
 }
 
 Z_INTERNAL uint32_t crc32_copy_chorba_sse41(uint32_t crc, uint8_t *dst, const uint8_t *src, size_t len) {
